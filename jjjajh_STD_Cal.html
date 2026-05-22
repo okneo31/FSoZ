@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>okneo31 스탠더드 시뮬레이터 v2 — 정수 결정론 + 카르텔 비교</title>
+    <!-- Tailwind CSS (Dark Mode & Clean UI) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen p-6 md:p-12">
+
+    <div class="max-w-5xl mx-auto space-y-8">
+
+        <!-- Header -->
+        <header class="border-b border-gray-700 pb-6">
+            <h1 class="text-3xl font-extrabold tracking-tight text-white">okneo31 스탠더드 시뮬레이터 <span class="text-blue-400">v2</span></h1>
+            <p class="text-gray-400 mt-2">정수 결정론 (부동소수점 0, .sol과 동일 결과) · 감쇠 명예 · Quadratic 투표 · <span class="text-emerald-400 font-semibold">카르텔 비교</span></p>
+        </header>
+
+        <!-- Controls + Single-user trajectory -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Controls (Left Column) -->
+            <div class="md:col-span-1 space-y-6 bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-300 mb-2">초기 기여도 (명예)</label>
+                    <input type="number" id="initialHonor" value="10000" min="100" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-300 mb-2">일일 감쇠율 (BP)</label>
+                    <div class="flex items-center space-x-2">
+                        <input type="range" id="decayRateBp" min="1" max="500" value="100" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                        <span id="decayRateLabel" class="text-sm text-gray-400 w-16 text-right">100 BP</span>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">100 BP = 1% (지수 감쇠)</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-300 mb-2">경과 일수 (일)</label>
+                    <div class="flex items-center space-x-2">
+                        <input type="range" id="daysElapsed" min="1" max="365" value="30" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                        <span id="daysLabel" class="text-sm text-gray-400 w-16 text-right">30 일</span>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-gray-700 text-xs text-gray-500 leading-relaxed">
+                    <p class="font-semibold text-gray-400 mb-1">계산 엔진</p>
+                    <p>• <code class="text-blue-300">intDecay</code>: 정수 반복 (BP - r)/BP 곱셈</p>
+                    <p>• <code class="text-emerald-300">intSqrt</code>: 바빌로니아 Newton 정수 sqrt</p>
+                    <p class="mt-2">결과는 <a href="./jjjajh_STD_SC.sol" class="text-blue-400 underline">컨트랙트(.sol)</a> 와 <em>비트 단위로 동일</em>.</p>
+                </div>
+
+            </div>
+
+            <!-- Visualization (Right Column) -->
+            <div class="md:col-span-2 flex flex-col space-y-6">
+
+                <!-- Results Cards -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg flex flex-col justify-center items-center">
+                        <span class="text-gray-400 text-sm font-medium uppercase tracking-wider">현재 명예 (감쇠 적용)</span>
+                        <span id="currentHonorResult" class="text-4xl font-extrabold text-blue-400 mt-2">0</span>
+                    </div>
+                    <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg flex flex-col justify-center items-center">
+                        <span class="text-gray-400 text-sm font-medium uppercase tracking-wider">투표 권한 (정수 √)</span>
+                        <span id="votingPowerResult" class="text-4xl font-extrabold text-emerald-400 mt-2">0</span>
+                    </div>
+                </div>
+
+                <!-- Trajectory Chart -->
+                <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg flex-grow relative" style="min-height: 400px;">
+                    <canvas id="decayChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cartel Comparison (NEW) -->
+        <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
+            <h2 class="text-xl font-bold text-white mb-1">카르텔 비교 — 큰 기여자가 비효율적인 이유</h2>
+            <p class="text-gray-400 text-sm mb-6">
+                같은 설정에서 <span class="text-blue-300">1× / 10× / 100× / 1000× 기여자</span> 의 투표 권한(현재 시점, 감쇠 적용 후).
+                <br>핵심 — <strong class="text-emerald-400">10배 기여 ≠ 10배 권력.</strong> 한계효용 급감(`√`)이 카르텔을 수학적으로 비효율화합니다.
+            </p>
+
+            <div class="relative" style="min-height: 320px;">
+                <canvas id="cartelChart"></canvas>
+            </div>
+
+            <div id="cartelInsight" class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+                <!-- JS가 4개 카드 채움: 1× / 10× / 100× / 1000× -->
+            </div>
+
+            <div class="mt-6 text-xs text-gray-500 leading-relaxed border-t border-gray-700 pt-4">
+                💡 <strong class="text-gray-400">읽는 법</strong> — 막대 높이는 정수 sqrt(감쇠 후 명예). 카드 아래 비율은 1×를 기준으로 한 권력 배수. <em>10배 기여한 사람이 약 3.16배 권력만 갖는 게 보이면, 그 시스템에서는 자본 집중이 합리적 전략이 아니게 됩니다.</em>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ─── DOM ───
+        const elInitialHonor    = document.getElementById('initialHonor');
+        const elDecayRateBp     = document.getElementById('decayRateBp');
+        const elDecayRateLabel  = document.getElementById('decayRateLabel');
+        const elDaysElapsed     = document.getElementById('daysElapsed');
+        const elDaysLabel       = document.getElementById('daysLabel');
+        const elCurrentHonor    = document.getElementById('currentHonorResult');
+        const elVotingPower     = document.getElementById('votingPowerResult');
+        const elCartelInsight   = document.getElementById('cartelInsight');
+
+        let trajChart  = null;
+        let cartelChart = null;
+
+        // ─── 정수 결정론 엔진 (.sol과 비트 동일) ───
+        // intDecay: H_t = floor( ... floor( floor(H × (BP-r)/BP) × (BP-r)/BP ) ... ) — t회 반복.
+        function intDecay(initialHonor, decayRateBp, days) {
+            let h = Math.trunc(initialHonor);
+            const remain = 10000 - decayRateBp;
+            for (let i = 0; i < days; i++) {
+                h = Math.trunc(h * remain / 10000);
+                if (h === 0) return 0;
+            }
+            return h;
+        }
+
+        // intSqrt: 바빌로니아 Newton 정수. .sol의 sqrt와 동일 알고리즘.
+        function intSqrt(y) {
+            y = Math.trunc(y);
+            if (y === 0) return 0;
+            if (y <= 3) return 1;
+            let z = y;
+            let x = Math.trunc(y / 2) + 1;
+            while (x < z) {
+                z = x;
+                x = Math.trunc((Math.trunc(y / x) + x) / 2);
+            }
+            return z;
+        }
+
+        // ─── 궤적 데이터 (한 시민, days 동안) ───
+        function calculateTrajectory(initialHonor, decayRateBp, days) {
+            const labels = [], honorData = [], votingData = [];
+            let h = Math.trunc(initialHonor);
+            const remain = 10000 - decayRateBp;
+            for (let t = 0; t <= days; t++) {
+                labels.push(`${t}일`);
+                honorData.push(h);
+                votingData.push(intSqrt(h));
+                if (t < days) h = h === 0 ? 0 : Math.trunc(h * remain / 10000);
+            }
+            return { labels, honorData, votingData };
+        }
+
+        // ─── 카르텔 비교 데이터 ───
+        function calculateCartel(initialHonor, decayRateBp, days) {
+            const multipliers = [1, 10, 100, 1000];
+            return multipliers.map(m => {
+                const h = intDecay(initialHonor * m, decayRateBp, days);
+                const vp = intSqrt(h);
+                return { multiplier: m, honor: h, voting: vp };
+            });
+        }
+
+        // ─── UI 업데이트 ───
+        function updateSimulation() {
+            const initialHonor = parseInt(elInitialHonor.value) || 0;
+            const decayRateBp  = parseInt(elDecayRateBp.value);
+            const days         = parseInt(elDaysElapsed.value);
+
+            elDecayRateLabel.textContent = `${decayRateBp} BP`;
+            elDaysLabel.textContent      = `${days} 일`;
+
+            // 궤적
+            const { labels, honorData, votingData } = calculateTrajectory(initialHonor, decayRateBp, days);
+            elCurrentHonor.textContent = honorData[honorData.length - 1].toLocaleString();
+            elVotingPower.textContent  = votingData[votingData.length - 1].toLocaleString();
+            renderTrajChart(labels, honorData, votingData);
+
+            // 카르텔 비교
+            const cartel = calculateCartel(initialHonor, decayRateBp, days);
+            renderCartelChart(cartel);
+            renderCartelCards(cartel);
+        }
+
+        // ─── 궤적 차트 (라인) ───
+        function renderTrajChart(labels, honorData, votingData) {
+            const ctx = document.getElementById('decayChart').getContext('2d');
+            if (trajChart) trajChart.destroy();
+            trajChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        { label: '명예 점수 (Honor)', data: honorData, borderColor: '#60A5FA', backgroundColor: 'rgba(96,165,250,0.1)', borderWidth: 2, yAxisID: 'y',  fill: true,  tension: 0.3, pointRadius: 0 },
+                        { label: '투표 권한 (√)',    data: votingData, borderColor: '#34D399', borderWidth: 2, borderDash: [5,5], yAxisID: 'y1', tension: 0.3, pointRadius: 0 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { labels: { color: '#D1D5DB' } },
+                        tooltip: { backgroundColor: 'rgba(31,41,55,0.9)', titleColor: '#F3F4F6', bodyColor: '#D1D5DB', borderColor: '#4B5563', borderWidth: 1 }
+                    },
+                    scales: {
+                        x:  { grid: { color: '#374151' }, ticks: { color: '#9CA3AF' } },
+                        y:  { type: 'linear', position: 'left',  title: { display: true, text: '명예 점수', color: '#60A5FA' }, grid: { color: '#374151' }, ticks: { color: '#9CA3AF' } },
+                        y1: { type: 'linear', position: 'right', title: { display: true, text: '투표 권한', color: '#34D399' }, grid: { drawOnChartArea: false }, ticks: { color: '#9CA3AF' } }
+                    }
+                }
+            });
+        }
+
+        // ─── 카르텔 차트 (바) ───
+        function renderCartelChart(cartel) {
+            const ctx = document.getElementById('cartelChart').getContext('2d');
+            if (cartelChart) cartelChart.destroy();
+            cartelChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: cartel.map(c => `${c.multiplier}× 기여`),
+                    datasets: [{
+                        label: '투표 권한 (정수 √)',
+                        data: cartel.map(c => c.voting),
+                        backgroundColor: ['rgba(96,165,250,0.7)', 'rgba(52,211,153,0.7)', 'rgba(251,191,36,0.7)', 'rgba(248,113,113,0.7)'],
+                        borderColor:     ['#60A5FA',              '#34D399',              '#FBBF24',              '#F87171'],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(31,41,55,0.9)', titleColor: '#F3F4F6', bodyColor: '#D1D5DB', borderColor: '#4B5563', borderWidth: 1,
+                            callbacks: { afterLabel: (ctx) => {
+                                const c = cartel[ctx.dataIndex];
+                                return `명예: ${c.honor.toLocaleString()}`;
+                            }}
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#9CA3AF', font: { weight: 'bold' } } },
+                        y: { grid: { color: '#374151' }, ticks: { color: '#9CA3AF' }, title: { display: true, text: '투표 권한', color: '#34D399' } }
+                    }
+                }
+            });
+        }
+
+        // ─── 카르텔 인사이트 카드 (1× 대비 권력 배수) ───
+        function renderCartelCards(cartel) {
+            const base = cartel[0].voting || 1;  // 1× 기준
+            const palette = ['border-blue-500 text-blue-300', 'border-emerald-500 text-emerald-300', 'border-yellow-500 text-yellow-300', 'border-red-500 text-red-300'];
+            elCartelInsight.innerHTML = cartel.map((c, i) => {
+                const ratio = (c.voting / base).toFixed(2);
+                return `
+                    <div class="bg-gray-900 border ${palette[i].split(' ')[0]} rounded-lg p-3">
+                        <div class="text-xs uppercase tracking-wider text-gray-500">${c.multiplier}× 기여</div>
+                        <div class="text-2xl font-extrabold mt-1 ${palette[i].split(' ')[1]}">${c.voting.toLocaleString()}</div>
+                        <div class="text-xs text-gray-400 mt-1">1× 대비 <strong class="text-white">${ratio}×</strong> 권력</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ─── Events ───
+        elInitialHonor.addEventListener('input', updateSimulation);
+        elDecayRateBp.addEventListener('input',  updateSimulation);
+        elDaysElapsed.addEventListener('input',  updateSimulation);
+
+        // ─── Initial Load ───
+        updateSimulation();
+    </script>
+</body>
+</html>
