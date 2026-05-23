@@ -59,19 +59,24 @@
                     <label class="block text-sm font-semibold text-slate-700 dark:text-gray-300 mb-2">일일 감쇠율 (BP)</label>
                     <div class="flex items-center space-x-2">
                         <input type="range" id="decayRateBp" min="1" max="500" value="100"
-                               class="w-full h-3 bg-sky-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer">
-                        <span id="decayRateLabel" class="text-sm text-slate-600 dark:text-gray-400 w-20 text-right">100 BP</span>
+                               class="flex-1 h-3 bg-sky-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                        <input type="number" id="decayRateBpNum" min="1" max="500" value="100"
+                               class="w-24 bg-sky-50 dark:bg-gray-900 border border-sky-300 dark:border-gray-600 rounded-lg px-2 py-1 text-sm text-slate-900 dark:text-white text-right focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+                        <span class="text-sm text-slate-600 dark:text-gray-400">BP</span>
                     </div>
-                    <p class="text-xs text-slate-500 dark:text-gray-500 mt-2">100 BP = 1% (지수 감쇠)</p>
+                    <p class="text-xs text-slate-500 dark:text-gray-500 mt-2">100 BP = 1% · 슬라이더/숫자 양쪽 입력 가능 (1~500)</p>
                 </div>
 
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 dark:text-gray-300 mb-2">경과 일수 (일)</label>
                     <div class="flex items-center space-x-2">
                         <input type="range" id="daysElapsed" min="1" max="365" value="30"
-                               class="w-full h-3 bg-sky-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer">
-                        <span id="daysLabel" class="text-sm text-slate-600 dark:text-gray-400 w-20 text-right">30 일</span>
+                               class="flex-1 h-3 bg-sky-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                        <input type="number" id="daysElapsedNum" min="1" max="365" value="30"
+                               class="w-24 bg-sky-50 dark:bg-gray-900 border border-sky-300 dark:border-gray-600 rounded-lg px-2 py-1 text-sm text-slate-900 dark:text-white text-right focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+                        <span class="text-sm text-slate-600 dark:text-gray-400">일</span>
                     </div>
+                    <p class="text-xs text-slate-500 dark:text-gray-500 mt-2">슬라이더/숫자 양쪽 입력 가능 (1~365)</p>
                 </div>
 
                 <div class="pt-4 border-t border-sky-300 dark:border-gray-700 text-xs text-slate-600 dark:text-gray-400 leading-relaxed">
@@ -131,9 +136,9 @@
         // ─── DOM ───
         const elInitialHonor    = document.getElementById('initialHonor');
         const elDecayRateBp     = document.getElementById('decayRateBp');
-        const elDecayRateLabel  = document.getElementById('decayRateLabel');
+        const elDecayRateBpNum  = document.getElementById('decayRateBpNum');
         const elDaysElapsed     = document.getElementById('daysElapsed');
-        const elDaysLabel       = document.getElementById('daysLabel');
+        const elDaysElapsedNum  = document.getElementById('daysElapsedNum');
         const elCurrentHonor    = document.getElementById('currentHonorResult');
         const elVotingPower     = document.getElementById('votingPowerResult');
         const elCartelInsight   = document.getElementById('cartelInsight');
@@ -218,9 +223,6 @@
             const initialHonor = parseInt(elInitialHonor.value) || 0;
             const decayRateBp  = parseInt(elDecayRateBp.value);
             const days         = parseInt(elDaysElapsed.value);
-
-            elDecayRateLabel.textContent = `${decayRateBp} BP`;
-            elDaysLabel.textContent      = `${days} 일`;
 
             const { labels, honorData, votingData } = calculateTrajectory(initialHonor, decayRateBp, days);
             elCurrentHonor.textContent = honorData[honorData.length - 1].toLocaleString();
@@ -329,10 +331,34 @@
             setTheme(htmlEl.classList.contains('dark') ? 'light' : 'dark');
         });
 
+        // ─── 슬라이더 ↔ 숫자 입력 양방향 동기 ───
+        function bindRangeWithInput(rangeEl, inputEl) {
+            const min = parseInt(rangeEl.min), max = parseInt(rangeEl.max);
+            rangeEl.addEventListener('input', () => {
+                inputEl.value = rangeEl.value;
+                updateSimulation();
+            });
+            inputEl.addEventListener('input', () => {
+                const v = parseInt(inputEl.value);
+                if (!isNaN(v)) {
+                    rangeEl.value = Math.min(max, Math.max(min, v));
+                    updateSimulation();
+                }
+            });
+            inputEl.addEventListener('blur', () => {
+                let v = parseInt(inputEl.value);
+                if (isNaN(v) || v < min) v = min;
+                else if (v > max) v = max;
+                inputEl.value = v;
+                rangeEl.value = v;
+                updateSimulation();
+            });
+        }
+
         // ─── Events ───
         elInitialHonor.addEventListener('input', updateSimulation);
-        elDecayRateBp.addEventListener('input',  updateSimulation);
-        elDaysElapsed.addEventListener('input',  updateSimulation);
+        bindRangeWithInput(elDecayRateBp, elDecayRateBpNum);
+        bindRangeWithInput(elDaysElapsed, elDaysElapsedNum);
 
         // ─── Initial Load ───
         // 기본 = 라이트. 사용자 저장 선택이 있으면 그것 우선.
