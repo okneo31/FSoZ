@@ -22,12 +22,12 @@
         .dark ::-webkit-scrollbar-thumb { background: #4b5563; }
     </style>
 </head>
-<body class="bg-sky-50 dark:bg-gray-900 text-slate-900 dark:text-gray-100 min-h-screen p-6 md:p-12 transition-colors">
+<body class="bg-sky-200 dark:bg-gray-900 text-slate-900 dark:text-gray-100 min-h-screen p-6 md:p-12 transition-colors">
 
     <div class="max-w-5xl mx-auto space-y-8">
 
         <!-- Header + 테마 토글 -->
-        <header class="border-b border-sky-200 dark:border-gray-700 pb-6 flex items-center justify-between flex-wrap gap-4">
+        <header class="border-b border-sky-300 dark:border-gray-700 pb-6 flex items-center justify-between flex-wrap gap-4">
             <div>
                 <h1 class="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
                     okneo31 스탠더드 시뮬레이터 <span class="text-blue-600 dark:text-blue-400">v3.1</span>
@@ -47,7 +47,7 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
 
             <!-- Controls -->
-            <div class="md:col-span-1 space-y-6 bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-200 dark:border-gray-700 shadow-md">
+            <div class="md:col-span-1 space-y-6 bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
 
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 dark:text-gray-300 mb-2">초기 기여도 (명예)</label>
@@ -74,7 +74,7 @@
                     </div>
                 </div>
 
-                <div class="pt-4 border-t border-sky-200 dark:border-gray-700 text-xs text-slate-600 dark:text-gray-400 leading-relaxed">
+                <div class="pt-4 border-t border-sky-300 dark:border-gray-700 text-xs text-slate-600 dark:text-gray-400 leading-relaxed">
                     <p class="font-semibold text-slate-800 dark:text-gray-300 mb-2">계산 엔진</p>
                     <p>• <code class="text-blue-600 dark:text-blue-300">intDecay</code>: 정수 반복 (BP - r)/BP</p>
                     <p>• <code class="text-emerald-600 dark:text-emerald-300">intSqrt</code>: 바빌로니아 Newton</p>
@@ -87,25 +87,25 @@
 
                 <!-- Result Cards -->
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-200 dark:border-gray-700 shadow-md flex flex-col justify-center items-center">
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md flex flex-col justify-center items-center">
                         <span class="text-slate-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider">현재 명예 (감쇠 적용)</span>
                         <span id="currentHonorResult" class="text-4xl font-extrabold text-blue-600 dark:text-blue-400 mt-2">0</span>
                     </div>
-                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-200 dark:border-gray-700 shadow-md flex flex-col justify-center items-center">
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md flex flex-col justify-center items-center">
                         <span class="text-slate-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider">투표 권한 (정수 √)</span>
                         <span id="votingPowerResult" class="text-4xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-2">0</span>
                     </div>
                 </div>
 
                 <!-- Trajectory Chart -->
-                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-200 dark:border-gray-700 shadow-md flex-grow relative" style="min-height: 30rem;">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md flex-grow relative" style="min-height: 30rem;">
                     <canvas id="decayChart"></canvas>
                 </div>
             </div>
         </div>
 
         <!-- Cartel Comparison -->
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-200 dark:border-gray-700 shadow-md">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
             <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-2">카르텔 비교 — 큰 기여자가 비효율적인 이유</h2>
             <p class="text-slate-600 dark:text-gray-400 text-sm mb-6">
                 같은 설정에서 <span class="text-blue-600 dark:text-blue-300">1× / 10× / 100× / 1000× 기여자</span> 의 투표 권한(현재 시점, 감쇠 적용 후).
@@ -120,7 +120,7 @@
                 <!-- JS-rendered cards -->
             </div>
 
-            <div class="mt-6 text-xs text-slate-600 dark:text-gray-400 leading-relaxed border-t border-sky-200 dark:border-gray-700 pt-4">
+            <div class="mt-6 text-xs text-slate-600 dark:text-gray-400 leading-relaxed border-t border-sky-300 dark:border-gray-700 pt-4">
                 <strong class="text-slate-800 dark:text-gray-300">읽는 법</strong> — 막대 높이는 정수 sqrt(감쇠 후 명예). 카드 비율은 1× 기여 기준 권력 배수. <em>10배 기여한 사람이 약 3.16배 권력만 갖는 게 보이면, 그 시스템에서는 자본 집중이 합리적 전략이 아니게 됩니다.</em>
             </div>
         </div>
