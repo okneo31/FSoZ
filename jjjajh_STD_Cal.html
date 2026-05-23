@@ -79,11 +79,53 @@
                     <p class="text-xs text-slate-500 dark:text-gray-500 mt-2">슬라이더/숫자 양쪽 입력 가능 (1~365)</p>
                 </div>
 
-                <div class="pt-4 border-t border-sky-300 dark:border-gray-700 text-xs text-slate-600 dark:text-gray-400 leading-relaxed">
-                    <p class="font-semibold text-slate-800 dark:text-gray-300 mb-2">계산 엔진</p>
-                    <p>• <code class="text-blue-600 dark:text-blue-300">intDecay</code>: 정수 반복 (BP - r)/BP</p>
-                    <p>• <code class="text-emerald-600 dark:text-emerald-300">intSqrt</code>: 바빌로니아 Newton</p>
-                    <p class="mt-2">결과는 <a href="./jjjajh_STD_SC.sol" class="text-blue-600 dark:text-blue-400 underline">컨트랙트(.sol)</a> 와 <em>비트 단위로 동일</em>.</p>
+                <div class="pt-4 border-t border-sky-300 dark:border-gray-700">
+                    <p class="text-sm font-semibold text-slate-800 dark:text-gray-300 mb-4">계산 엔진</p>
+
+                    <div class="space-y-5">
+
+                        <div class="space-y-1">
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-slate-400 dark:text-gray-500 text-xs">▸</span>
+                                <code class="text-blue-600 dark:text-blue-300 font-bold text-xs">intDecay</code>
+                            </div>
+                            <p class="text-xs text-slate-600 dark:text-gray-400 ml-6 leading-snug">
+                                정수 반복 곱셈
+                            </p>
+                            <p class="text-xs text-slate-500 dark:text-gray-500 ml-6 leading-snug font-mono">
+                                (BP − r) / BP
+                            </p>
+                            <p class="text-xs text-slate-500 dark:text-gray-500 ml-6 leading-snug italic">
+                                — 감쇠 명예 계산
+                            </p>
+                        </div>
+
+                        <div class="space-y-1">
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-slate-400 dark:text-gray-500 text-xs">▸</span>
+                                <code class="text-emerald-600 dark:text-emerald-300 font-bold text-xs">intSqrt</code>
+                            </div>
+                            <p class="text-xs text-slate-600 dark:text-gray-400 ml-6 leading-snug">
+                                바빌로니아 Newton 정수 제곱근
+                            </p>
+                            <p class="text-xs text-slate-500 dark:text-gray-500 ml-6 leading-snug italic">
+                                — Quadratic 투표 무게
+                            </p>
+                        </div>
+
+                    </div>
+
+                    <div class="mt-5 pt-4 border-t border-sky-200 dark:border-gray-700">
+                        <p class="text-xs text-slate-600 dark:text-gray-400 leading-snug">
+                            결과는
+                        </p>
+                        <p class="text-xs text-slate-600 dark:text-gray-400 leading-snug mt-1">
+                            <a href="./jjjajh_STD_SC.sol" class="text-blue-600 dark:text-blue-400 underline">컨트랙트(.sol)</a> 와
+                        </p>
+                        <p class="text-xs text-slate-700 dark:text-gray-300 leading-snug mt-1 font-semibold">
+                            <em>비트 단위로 동일</em>.
+                        </p>
+                    </div>
                 </div>
             </div>
 
