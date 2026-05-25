@@ -3,310 +3,563 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>안재현 스탠더드 시뮬</title>
+    <title>안재현 스탠더드 시뮬 v4</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = { darkMode: 'class' };
-    </script>
+    <script>tailwind.config = { darkMode: 'class' };</script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-        /* 본문 폰트 전체 2배 (rem 기반). 차트는 캔버스 — JS 옵션으로 2.5배 별도. */
         html { font-size: 200%; }
         .text-xs { font-size: 1.125rem !important; }
         body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         ::-webkit-scrollbar { width: 14px; }
-        ::-webkit-scrollbar-track { background: #E0F2FE; }     /* sky-100 */
-        ::-webkit-scrollbar-thumb { background: #7DD3FC; border-radius: 7px; }  /* sky-300 */
+        ::-webkit-scrollbar-track { background: #E0F2FE; }
+        ::-webkit-scrollbar-thumb { background: #7DD3FC; border-radius: 7px; }
         .dark ::-webkit-scrollbar-track { background: #1f2937; }
         .dark ::-webkit-scrollbar-thumb { background: #4b5563; }
+        .tab-btn.active { background-color: #2563EB; color: white; }
+        .dark .tab-btn.active { background-color: #60A5FA; color: #111827; }
     </style>
 </head>
 <body class="bg-sky-200 dark:bg-gray-900 text-slate-900 dark:text-gray-100 min-h-screen p-6 md:p-12 transition-colors">
 
-    <div class="max-w-5xl mx-auto space-y-8">
+    <!-- Tailwind JIT safelist (동적 클래스 보장) -->
+    <div class="hidden
+        bg-blue-50 bg-emerald-50 bg-amber-50 bg-red-50 bg-purple-50
+        dark:bg-blue-900/30 dark:bg-emerald-900/30 dark:bg-amber-900/30 dark:bg-red-900/30 dark:bg-purple-900/30
+        border-blue-300 border-emerald-300 border-amber-300 border-red-300 border-purple-300
+        border-blue-400 border-emerald-400 border-amber-400 border-red-400 border-purple-400
+        border-blue-500 border-emerald-500 border-amber-500 border-red-500 border-purple-500
+        dark:border-blue-500 dark:border-emerald-500 dark:border-amber-500 dark:border-red-500 dark:border-purple-500
+        dark:border-blue-700 dark:border-emerald-700 dark:border-amber-700 dark:border-red-700 dark:border-purple-700
+        text-blue-300 text-emerald-300 text-amber-300 text-red-300 text-purple-300
+        text-blue-400 text-emerald-400 text-amber-400 text-red-400 text-purple-400
+        text-blue-600 text-emerald-600 text-amber-600 text-red-600 text-purple-600
+        text-blue-700 text-emerald-700 text-amber-700 text-red-700 text-purple-700
+        dark:text-blue-400 dark:text-emerald-400 dark:text-amber-400 dark:text-red-400 dark:text-purple-400"></div>
 
-        <!-- Header + 테마 토글 -->
+    <div class="max-w-7xl mx-auto space-y-6">
+
+        <!-- Header -->
         <header class="border-b border-sky-300 dark:border-gray-700 pb-6 flex items-center justify-between flex-wrap gap-4">
             <div>
                 <h1 class="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                    안재현 스탠더드 시뮬 <span class="text-blue-600 dark:text-blue-400">v3.5</span>
+                    안재현 스탠더드 시뮬 <span class="text-blue-600 dark:text-blue-400">v4.1</span>
                 </h1>
-                <p class="text-slate-600 dark:text-gray-400 mt-2">
-                    정수 결정론 · 감쇠 명예 · Quadratic 투표 · <span class="text-emerald-600 dark:text-emerald-400 font-semibold">카르텔 비교</span>
+                <p class="text-slate-600 dark:text-gray-400 mt-2 text-sm">
+                    3축 명예 (kWR 기반) · 가속 감쇠 · 행동 게이트 · 안식일 · 봉사 복리+자본보너스 — <em>컨트랙트 v3.1 (jjjajh_STD_SC.sol)와 비트 동일</em>
                 </p>
             </div>
-            <button id="themeToggle"
-                    class="px-5 py-3 rounded-lg bg-white dark:bg-gray-800 border-2 border-sky-300 dark:border-gray-600 font-semibold hover:bg-sky-100 dark:hover:bg-gray-700 transition-colors text-slate-900 dark:text-gray-100"
-                    aria-label="라이트/다크 모드 토글">
-                <span id="themeLabel">◑ 다크 모드</span>
-            </button>
+            <div class="flex items-center gap-3 flex-wrap">
+                <select id="scenarioPreset" class="bg-white dark:bg-gray-800 border-2 border-sky-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm font-semibold text-slate-900 dark:text-gray-100">
+                    <option value="">시나리오 선택…</option>
+                    <option value="capitalist">자본가 (방관) — C만, 활동 0%</option>
+                    <option value="worker">노동자 — L 中, 활동 85%</option>
+                    <option value="auditor">검증자 — V 中, 활동 85%</option>
+                    <option value="balanced">균형형 — C/L/V 동일, 활동 90% + 봉사</option>
+                    <option value="elder">원로 (10년차) — 모든 축 + 520주 봉사</option>
+                    <option value="bot">봇 (23h 패턴) — 자본만, 활동 0% (감쇠 무방비)</option>
+                </select>
+                <button id="csvExport" class="px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border-2 border-sky-300 dark:border-gray-600 font-semibold text-sm hover:bg-sky-100 dark:hover:bg-gray-700">📥 CSV</button>
+                <button id="themeToggle" class="px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border-2 border-sky-300 dark:border-gray-600 font-semibold text-sm hover:bg-sky-100 dark:hover:bg-gray-700">
+                    <span id="themeLabel">◑ 다크</span>
+                </button>
+            </div>
         </header>
 
-        <!-- Controls + Trajectory -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-
-            <!-- Controls -->
-            <div class="md:col-span-1 space-y-6 bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
-
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 dark:text-gray-300 mb-2">초기 기여도 (명예)</label>
-                    <input type="number" id="initialHonor" value="10000" min="100"
-                           class="w-full bg-sky-50 dark:bg-gray-900 border border-sky-300 dark:border-gray-600 rounded-lg p-3 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
-                </div>
-
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 dark:text-gray-300 mb-2">일일 감쇠율 (BP)</label>
-                    <div class="flex items-center space-x-2">
-                        <input type="range" id="decayRateBp" min="1" max="500" value="100"
-                               class="flex-1 h-3 bg-sky-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer">
-                        <input type="number" id="decayRateBpNum" min="1" max="500" value="100"
-                               class="w-24 bg-sky-50 dark:bg-gray-900 border border-sky-300 dark:border-gray-600 rounded-lg px-2 py-1 text-sm text-slate-900 dark:text-white text-right focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
-                        <span class="text-sm text-slate-600 dark:text-gray-400">BP</span>
-                    </div>
-                    <div class="mt-3 space-y-1">
-                        <p class="text-xs text-slate-600 dark:text-gray-400 leading-snug">
-                            <span class="text-slate-400 dark:text-gray-500">▸</span> 100 BP = 1%
-                        </p>
-                        <p class="text-xs text-slate-500 dark:text-gray-500 leading-snug ml-4 italic">
-                            — 슬라이더와 숫자 모두 입력 가능
-                        </p>
-                        <p class="text-xs text-slate-500 dark:text-gray-500 leading-snug ml-4 italic">
-                            — 범위: 1 ~ 500
-                        </p>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 dark:text-gray-300 mb-2">경과 일수 (일)</label>
-                    <div class="flex items-center space-x-2">
-                        <input type="range" id="daysElapsed" min="1" max="365" value="30"
-                               class="flex-1 h-3 bg-sky-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer">
-                        <input type="number" id="daysElapsedNum" min="1" max="365" value="30"
-                               class="w-24 bg-sky-50 dark:bg-gray-900 border border-sky-300 dark:border-gray-600 rounded-lg px-2 py-1 text-sm text-slate-900 dark:text-white text-right focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
-                        <span class="text-sm text-slate-600 dark:text-gray-400">일</span>
-                    </div>
-                    <div class="mt-3 space-y-1">
-                        <p class="text-xs text-slate-600 dark:text-gray-400 leading-snug">
-                            <span class="text-slate-400 dark:text-gray-500">▸</span> 감쇠가 적용될 일수
-                        </p>
-                        <p class="text-xs text-slate-500 dark:text-gray-500 leading-snug ml-4 italic">
-                            — 슬라이더와 숫자 모두 입력 가능
-                        </p>
-                        <p class="text-xs text-slate-500 dark:text-gray-500 leading-snug ml-4 italic">
-                            — 범위: 1 ~ 365
-                        </p>
-                    </div>
-                </div>
-
-                <div class="pt-4 border-t border-sky-300 dark:border-gray-700">
-                    <p class="text-sm font-semibold text-slate-800 dark:text-gray-300 mb-4">계산 엔진</p>
-
-                    <div class="space-y-5">
-
-                        <div class="space-y-1">
-                            <div class="flex items-baseline gap-2">
-                                <span class="text-slate-400 dark:text-gray-500 text-xs">▸</span>
-                                <code class="text-blue-600 dark:text-blue-300 font-bold text-xs">intDecay</code>
-                            </div>
-                            <p class="text-xs text-slate-600 dark:text-gray-400 ml-6 leading-snug">
-                                정수 반복 곱셈
-                            </p>
-                            <p class="text-xs text-slate-500 dark:text-gray-500 ml-6 leading-snug font-mono">
-                                (BP − r) / BP
-                            </p>
-                            <p class="text-xs text-slate-500 dark:text-gray-500 ml-6 leading-snug italic">
-                                — 감쇠 명예 계산
-                            </p>
-                        </div>
-
-                        <div class="space-y-1">
-                            <div class="flex items-baseline gap-2">
-                                <span class="text-slate-400 dark:text-gray-500 text-xs">▸</span>
-                                <code class="text-emerald-600 dark:text-emerald-300 font-bold text-xs">intSqrt</code>
-                            </div>
-                            <p class="text-xs text-slate-600 dark:text-gray-400 ml-6 leading-snug">
-                                바빌로니아 Newton 정수 제곱근
-                            </p>
-                            <p class="text-xs text-slate-500 dark:text-gray-500 ml-6 leading-snug italic">
-                                — Quadratic 투표 무게
-                            </p>
-                        </div>
-
-                    </div>
-
-                    <div class="mt-5 pt-4 border-t border-sky-200 dark:border-gray-700">
-                        <p class="text-xs text-slate-600 dark:text-gray-400 leading-snug">
-                            결과는
-                        </p>
-                        <p class="text-xs text-slate-600 dark:text-gray-400 leading-snug mt-1">
-                            <a href="./jjjajh_STD_SC.sol" class="text-blue-600 dark:text-blue-400 underline">컨트랙트(.sol)</a> 와
-                        </p>
-                        <p class="text-xs text-slate-700 dark:text-gray-300 leading-snug mt-1 font-semibold">
-                            <em>비트 단위로 동일</em>.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Visualization -->
-            <div class="md:col-span-2 flex flex-col space-y-6">
-
-                <!-- Result Cards -->
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md flex flex-col justify-center items-center">
-                        <span class="text-slate-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider">현재 명예 (감쇠 적용)</span>
-                        <span id="currentHonorResult" class="text-4xl font-extrabold text-blue-600 dark:text-blue-400 mt-2">0</span>
-                    </div>
-                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md flex flex-col justify-center items-center">
-                        <span class="text-slate-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider">투표 권한 (정수 √)</span>
-                        <span id="votingPowerResult" class="text-4xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-2">0</span>
-                    </div>
-                </div>
-
-                <!-- Trajectory Chart -->
-                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md flex-grow relative" style="min-height: 30rem;">
-                    <canvas id="decayChart"></canvas>
-                </div>
-            </div>
+        <!-- Tabs -->
+        <div class="flex flex-wrap gap-2 border-b border-sky-300 dark:border-gray-700 pb-3">
+            <button data-tab="citizen"  class="tab-btn active px-4 py-2 rounded-lg text-sm font-semibold bg-white dark:bg-gray-800 border-2 border-sky-300 dark:border-gray-600">① 시민</button>
+            <button data-tab="lifespan" class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold bg-white dark:bg-gray-800 border-2 border-sky-300 dark:border-gray-600">② 수명·감쇠</button>
+            <button data-tab="volunteer" class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold bg-white dark:bg-gray-800 border-2 border-sky-300 dark:border-gray-600">③ 봉사 30년</button>
+            <button data-tab="compare"   class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold bg-white dark:bg-gray-800 border-2 border-sky-300 dark:border-gray-600">④ 비교</button>
+            <button data-tab="verify"    class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold bg-white dark:bg-gray-800 border-2 border-sky-300 dark:border-gray-600">⑤ 검증</button>
         </div>
 
-        <!-- Cartel Comparison -->
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
-            <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-2">카르텔 비교 — 큰 기여자가 비효율적인 이유</h2>
-            <p class="text-slate-600 dark:text-gray-400 text-sm mb-6">
-                같은 설정에서 <span class="text-blue-600 dark:text-blue-300">1× / 10× / 100× / 1000× 기여자</span> 의 투표 권한(현재 시점, 감쇠 적용 후).
-                <br>핵심 — <strong class="text-emerald-600 dark:text-emerald-400">10배 기여 ≠ 10배 권력.</strong> 한계효용 급감(`√`)이 카르텔을 수학적으로 비효율화합니다.
-            </p>
+        <!-- ─── TAB 1: 시민 ─── -->
+        <section data-section="citizen" class="space-y-6">
 
-            <div class="relative" style="min-height: 24rem;">
-                <canvas id="cartelChart"></canvas>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                <!-- Controls -->
+                <div class="lg:col-span-1 space-y-5 bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
+                    <h2 class="font-bold text-lg text-slate-900 dark:text-white">시민 입력</h2>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-gray-300 mb-2">초기 명예 (C / L / V) — 단위 kWR</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <input type="number" id="honorC" value="10000" min="0" class="bg-sky-50 dark:bg-gray-900 border border-sky-300 dark:border-gray-600 rounded p-2 text-sm" placeholder="C kWR">
+                            <input type="number" id="honorL" value="10000" min="0" class="bg-sky-50 dark:bg-gray-900 border border-sky-300 dark:border-gray-600 rounded p-2 text-sm" placeholder="L">
+                            <input type="number" id="honorV" value="10000" min="0" class="bg-sky-50 dark:bg-gray-900 border border-sky-300 dark:border-gray-600 rounded p-2 text-sm" placeholder="V">
+                        </div>
+                        <p class="text-xs text-slate-500 dark:text-gray-500 mt-1 italic">C 자본=kWR (Zion에서 lock된 양). 가중치 1:5:5</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-gray-300 mb-2">경과 일수 <span id="daysLabel" class="text-blue-600 dark:text-blue-300">365일</span></label>
+                        <input type="range" id="days" min="1" max="3650" value="365" class="w-full h-3 bg-sky-200 dark:bg-gray-700 rounded-lg">
+                        <p class="text-xs text-slate-500 dark:text-gray-500 mt-1 italic">1일 ~ 10년 (3650일)</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-gray-300 mb-2">활동 게이트 <span id="activityLabel" class="text-emerald-600 dark:text-emerald-300">85%</span></label>
+                        <input type="range" id="activityPct" min="0" max="100" value="85" class="w-full h-3 bg-sky-200 dark:bg-gray-700 rounded-lg">
+                        <p class="text-xs text-slate-500 dark:text-gray-500 mt-1 italic">≥2h 활동 통과 일자 비율 (이 비율만큼 감쇠 면제)</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-gray-300 mb-2">안식일 offset (0~6)</label>
+                        <select id="sabbathOffset" class="w-full bg-sky-50 dark:bg-gray-900 border border-sky-300 dark:border-gray-600 rounded p-2 text-sm">
+                            <option value="0">0 — 가입일이 안식일</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6" selected>6 — 6일째가 안식일 (기본)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-gray-300">
+                            <input type="checkbox" id="autoVolunteer" class="h-4 w-4">
+                            매주 봉사 (7일 중 어느 날이든 ≥2h 무료노동)
+                        </label>
+                        <p class="text-xs text-slate-500 dark:text-gray-500 mt-1 italic">체크 시 매 7일마다 봉사 주수 +1, multBP × 1.01342, <strong>자본 += max(100, C × 1%)</strong></p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-gray-300 mb-2">초기 봉사 누적 <span id="volWeeksLabel" class="text-amber-600 dark:text-amber-300">0주</span></label>
+                        <input type="range" id="initVolWeeks" min="0" max="1560" value="0" class="w-full h-3 bg-sky-200 dark:bg-gray-700 rounded-lg">
+                        <p class="text-xs text-slate-500 dark:text-gray-500 mt-1 italic">0주 ~ 1560주 (30년)</p>
+                    </div>
+                </div>
+
+                <!-- Results -->
+                <div class="lg:col-span-2 space-y-4">
+
+                    <!-- Result Cards -->
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-xl border-2 border-blue-400 dark:border-blue-500 shadow text-center">
+                            <div class="text-xs uppercase tracking-wider text-slate-500 dark:text-gray-400">자본 C (kWR)</div>
+                            <div id="resC" class="text-2xl font-extrabold text-blue-600 dark:text-blue-400 mt-1">0</div>
+                            <div id="resCpct" class="text-xs text-slate-500 dark:text-gray-500 mt-1">— %</div>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-xl border-2 border-emerald-400 dark:border-emerald-500 shadow text-center">
+                            <div class="text-xs uppercase tracking-wider text-slate-500 dark:text-gray-400">노동 L</div>
+                            <div id="resL" class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">0</div>
+                            <div id="resLpct" class="text-xs text-slate-500 dark:text-gray-500 mt-1">— %</div>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-xl border-2 border-purple-400 dark:border-purple-500 shadow text-center">
+                            <div class="text-xs uppercase tracking-wider text-slate-500 dark:text-gray-400">검증 V</div>
+                            <div id="resV" class="text-2xl font-extrabold text-purple-600 dark:text-purple-400 mt-1">0</div>
+                            <div id="resVpct" class="text-xs text-slate-500 dark:text-gray-500 mt-1">— %</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-xl border-2 border-amber-400 dark:border-amber-500 shadow text-center">
+                            <div class="text-xs uppercase tracking-wider text-slate-500 dark:text-gray-400">봉사 multBP</div>
+                            <div id="resMult" class="text-xl font-extrabold text-amber-600 dark:text-amber-400 mt-1">10000</div>
+                            <div id="resMultX" class="text-xs text-slate-500 dark:text-gray-500 mt-1">1.00×</div>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-xl border-2 border-slate-400 dark:border-slate-500 shadow text-center col-span-2">
+                            <div class="text-xs uppercase tracking-wider text-slate-500 dark:text-gray-400">의결권 (VP)</div>
+                            <div id="resVP" class="text-3xl font-extrabold text-slate-900 dark:text-white mt-1">0</div>
+                            <div id="resVPformula" class="text-xs text-slate-500 dark:text-gray-500 mt-1 font-mono">(√C + 5√L + 5√V) × √(mult/BP)</div>
+                        </div>
+                    </div>
+
+                    <!-- Trajectory Chart -->
+                    <div class="bg-white dark:bg-gray-800 p-5 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md relative" style="min-height: 28rem;">
+                        <canvas id="trajChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── TAB 2: 수명·감쇠 (F1+F2) ─── -->
+        <section data-section="lifespan" class="space-y-6 hidden">
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                <!-- D-day card -->
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
+                    <h2 class="font-bold text-lg text-slate-900 dark:text-white mb-4">F1 — 수명 예측 (D-day)</h2>
+                    <p class="text-sm text-slate-600 dark:text-gray-400 mb-4">현재 입력 기준, 3축 명예가 모두 0이 되는 추정일.</p>
+                    <div class="text-center py-8 bg-sky-50 dark:bg-gray-900 rounded-lg">
+                        <div class="text-xs uppercase tracking-wider text-slate-500 dark:text-gray-400">남은 수명</div>
+                        <div id="ddayResult" class="text-5xl font-extrabold text-red-600 dark:text-red-400 mt-2">— 일</div>
+                        <div id="ddayBreakdown" class="text-sm text-slate-600 dark:text-gray-400 mt-3">C: —일 · L: —일 · V: —일</div>
+                    </div>
+                    <div class="mt-4 text-xs text-slate-500 dark:text-gray-500 leading-relaxed border-t border-sky-200 dark:border-gray-700 pt-3">
+                        <strong>해석</strong>: 462일차에 감쇠율이 100%에 도달 — 안식일·활동 게이트 사용하지 않으면 그 날 즉시 전소. <em>"영원한 경계" 규약.</em>
+                    </div>
+                </div>
+
+                <!-- Decay rate curve -->
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
+                    <h2 class="font-bold text-lg text-slate-900 dark:text-white mb-4">F2 — 감쇠율 곡선 rate(n) = 1% × 1.01ⁿ</h2>
+                    <p class="text-sm text-slate-600 dark:text-gray-400 mb-4">가입일로부터 n일째 감쇠율. 462일 cap 도달.</p>
+                    <div class="relative" style="min-height: 18rem;">
+                        <canvas id="rateChart"></canvas>
+                    </div>
+                </div>
             </div>
 
-            <div id="cartelInsight" class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
-                <!-- JS-rendered cards -->
+            <!-- Lifeline scenarios table -->
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
+                <h2 class="font-bold text-lg text-slate-900 dark:text-white mb-4">활동률별 수명 표</h2>
+                <p class="text-sm text-slate-600 dark:text-gray-400 mb-4">초기 명예 C=L=V=10000, 안식일 offset=6 고정. 같은 활동률로 매일 살았을 때 D-day.</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-sky-100 dark:bg-gray-700">
+                            <tr>
+                                <th class="px-3 py-2 text-left">활동률</th>
+                                <th class="px-3 py-2 text-right">봉사 없음</th>
+                                <th class="px-3 py-2 text-right">매주 봉사</th>
+                                <th class="px-3 py-2 text-right">차이</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lifelineTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── TAB 3: 봉사 30년 (F4) ─── -->
+        <section data-section="volunteer" class="space-y-6 hidden">
+
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
+                <h2 class="font-bold text-lg text-slate-900 dark:text-white mb-2">F4 — 봉사 누적 30년 프로젝션</h2>
+                <p class="text-sm text-slate-600 dark:text-gray-400 mb-4">
+                    매주 ≥2h 봉사 시: (a) 명예 multBP × 1.01342 복리 (52주=2×), (b) <strong>자본 += max(100 kWR, C × 1%)</strong> (v3.1 NEW). 30년 = 1560주. VP factor = √(multBP/BP).
+                </p>
+                <div class="relative" style="min-height: 26rem;">
+                    <canvas id="volChart"></canvas>
+                </div>
+                <div class="mt-4 grid grid-cols-2 md:grid-cols-5 gap-3 text-center" id="volMilestones"></div>
+            </div>
+        </section>
+
+        <!-- ─── TAB 4: 비교 (F3+카르텔+F6) ─── -->
+        <section data-section="compare" class="space-y-6 hidden">
+
+            <!-- F3: 두 시민 비교 -->
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
+                <h2 class="font-bold text-lg text-slate-900 dark:text-white mb-3">F3 — 두 시민 head-to-head</h2>
+                <p class="text-sm text-slate-600 dark:text-gray-400 mb-4">같은 일수 동안 두 시민의 VP 시계열을 비교.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="space-y-2 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-300 dark:border-blue-700">
+                        <h3 class="font-semibold text-blue-700 dark:text-blue-300">시민 A</h3>
+                        <div class="grid grid-cols-3 gap-2">
+                            <input type="number" id="aC" value="10000" class="bg-white dark:bg-gray-900 border rounded p-2 text-sm" placeholder="C">
+                            <input type="number" id="aL" value="0" class="bg-white dark:bg-gray-900 border rounded p-2 text-sm" placeholder="L">
+                            <input type="number" id="aV" value="0" class="bg-white dark:bg-gray-900 border rounded p-2 text-sm" placeholder="V">
+                        </div>
+                        <label class="block text-xs">활동률 <input type="number" id="aAct" value="50" min="0" max="100" class="bg-white dark:bg-gray-900 border rounded p-1 w-20 text-sm">%</label>
+                        <label class="flex items-center gap-2 text-xs"><input type="checkbox" id="aVol"> 매주 봉사</label>
+                    </div>
+                    <div class="space-y-2 p-3 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg border border-emerald-300 dark:border-emerald-700">
+                        <h3 class="font-semibold text-emerald-700 dark:text-emerald-300">시민 B</h3>
+                        <div class="grid grid-cols-3 gap-2">
+                            <input type="number" id="bC" value="0" class="bg-white dark:bg-gray-900 border rounded p-2 text-sm" placeholder="C">
+                            <input type="number" id="bL" value="5000" class="bg-white dark:bg-gray-900 border rounded p-2 text-sm" placeholder="L">
+                            <input type="number" id="bV" value="5000" class="bg-white dark:bg-gray-900 border rounded p-2 text-sm" placeholder="V">
+                        </div>
+                        <label class="block text-xs">활동률 <input type="number" id="bAct" value="95" min="0" max="100" class="bg-white dark:bg-gray-900 border rounded p-1 w-20 text-sm">%</label>
+                        <label class="flex items-center gap-2 text-xs"><input type="checkbox" id="bVol" checked> 매주 봉사</label>
+                    </div>
+                </div>
+                <div class="relative" style="min-height: 24rem;">
+                    <canvas id="vsChart"></canvas>
+                </div>
             </div>
 
-            <div class="mt-6 text-xs text-slate-600 dark:text-gray-400 leading-relaxed border-t border-sky-300 dark:border-gray-700 pt-4">
-                <strong class="text-slate-800 dark:text-gray-300">읽는 법</strong> — 막대 높이는 정수 sqrt(감쇠 후 명예). 카드 비율은 1× 기여 기준 권력 배수. <em>10배 기여한 사람이 약 3.16배 권력만 갖는 게 보이면, 그 시스템에서는 자본 집중이 합리적 전략이 아니게 됩니다.</em>
+            <!-- Cartel (3-axis updated) -->
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
+                <h2 class="font-bold text-lg text-slate-900 dark:text-white mb-2">카르텔 비교 (3축 + 봉사)</h2>
+                <p class="text-sm text-slate-600 dark:text-gray-400 mb-4">
+                    같은 입력에서 <span class="text-blue-600 dark:text-blue-300">1× / 10× / 100× / 1000×</span> 초기 명예. <strong class="text-emerald-600 dark:text-emerald-400">10× 입력 ≈ √10 ≈ 3.16× 권력.</strong> 자본 집중이 비효율적.
+                </p>
+                <div class="relative" style="min-height: 22rem;">
+                    <canvas id="cartelChart"></canvas>
+                </div>
+                <div id="cartelInsight" class="mt-5 grid grid-cols-2 md:grid-cols-4 gap-3 text-center"></div>
             </div>
-        </div>
+
+            <!-- F6: 직업 아키타입 -->
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
+                <h2 class="font-bold text-lg text-slate-900 dark:text-white mb-2">F6 — 직업 아키타입 비교</h2>
+                <p class="text-sm text-slate-600 dark:text-gray-400 mb-4">같은 자원(총 30000 명예 + 동일 활동률 85% + 매주 봉사) 1년 후 VP. <em>최적 전략은 분산.</em></p>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="archetypeCards"></div>
+            </div>
+        </section>
+
+        <!-- ─── TAB 5: 검증 (F7) ─── -->
+        <section data-section="verify" class="space-y-6 hidden">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
+                <h2 class="font-bold text-lg text-slate-900 dark:text-white mb-2">F7 — 컨트랙트 비트 동일성 검증</h2>
+                <p class="text-sm text-slate-600 dark:text-gray-400 mb-4">
+                    현재 입력에 대한 시뮬레이터 엔진 출력. 이 값들은 <code>jjjajh_STD_SC.sol</code> 의 동일 호출 결과와 *비트 단위 동일* 해야 함.
+                </p>
+                <div class="space-y-3" id="verifyTable"></div>
+                <div class="mt-5 text-xs text-slate-600 dark:text-gray-400 leading-relaxed border-t border-sky-200 dark:border-gray-700 pt-3">
+                    <strong>검증 방법</strong>: 컨트랙트를 로컬에 배포 → <code>join() + contribute() + attestHonor/attestDay</code> 시퀀스로 같은 상태 만들기 → <code>getCurrentHonor / getVotingPower</code> 호출 → 위 값과 일치 확인.
+                    <br><br>
+                    <em>주의</em>: 시뮬은 단일 시간축. 컨트랙트의 90일 cap (`MAX_DECAY_DAYS_PER_CALL`)은 시뮬 무관 (시뮬은 일괄 계산).
+                </div>
+            </div>
+        </section>
 
     </div>
 
     <script>
-        // ─── DOM ───
-        const elInitialHonor    = document.getElementById('initialHonor');
-        const elDecayRateBp     = document.getElementById('decayRateBp');
-        const elDecayRateBpNum  = document.getElementById('decayRateBpNum');
-        const elDaysElapsed     = document.getElementById('daysElapsed');
-        const elDaysElapsedNum  = document.getElementById('daysElapsedNum');
-        const elCurrentHonor    = document.getElementById('currentHonorResult');
-        const elVotingPower     = document.getElementById('votingPowerResult');
-        const elCartelInsight   = document.getElementById('cartelInsight');
-        const elThemeToggle     = document.getElementById('themeToggle');
-        const elThemeLabel      = document.getElementById('themeLabel');
-        const htmlEl            = document.documentElement;
+        // ════════════════════════════════════════════════════════════
+        // 상수 — v3 컨트랙트와 비트 동일
+        // ════════════════════════════════════════════════════════════
+        const BP                    = 10000;
+        const BASE_DECAY_BP         = 100;
+        const RATE_GROWTH_NUM       = 101;
+        const RATE_GROWTH_DEN       = 100;
+        const VOL_NUM               = 101342;
+        const VOL_DEN               = 100000;
+        const VOL_CAPITAL_MIN       = 100;   // v3.1: 봉사 시 최소 자본 +100 kWR
+        const VOL_CAPITAL_PCT_BP    = 100;   // v3.1: 또는 C × 1% (둘 중 큰 거)
+        const WEIGHT_L              = 5;
+        const WEIGHT_V              = 5;
 
-        let trajChart  = null;
-        let cartelChart = null;
+        // ════════════════════════════════════════════════════════════
+        // 엔진 — 정수 결정론 (Solidity와 동등)
+        // ════════════════════════════════════════════════════════════
 
-        // ─── 차트 폰트 사이즈 (px) — 본문 2x 대비 2.5x 별도 ───
-        const FS = { tick: 30, title: 33, legend: 35, tickBold: 35, tooltipTitle: 32, tooltipBody: 30 };
-
-        // ─── 정수 결정론 엔진 (.sol과 비트 동일) ───
-        function intDecay(initialHonor, decayRateBp, days) {
-            let h = Math.trunc(initialHonor);
-            const remain = 10000 - decayRateBp;
-            for (let i = 0; i < days; i++) {
-                h = Math.trunc(h * remain / 10000);
-                if (h === 0) return 0;
-            }
-            return h;
-        }
         function intSqrt(y) {
-            y = Math.trunc(y);
-            if (y === 0) return 0;
+            y = Math.floor(y);
+            if (y <= 0) return 0;
             if (y <= 3) return 1;
             let z = y;
-            let x = Math.trunc(y / 2) + 1;
+            let x = Math.floor(y / 2) + 1;
             while (x < z) {
                 z = x;
-                x = Math.trunc((Math.trunc(y / x) + x) / 2);
+                x = Math.floor((Math.floor(y / x) + x) / 2);
             }
             return z;
         }
 
-        function calculateTrajectory(initialHonor, decayRateBp, days) {
-            const labels = [], honorData = [], votingData = [];
-            let h = Math.trunc(initialHonor);
-            const remain = 10000 - decayRateBp;
-            for (let t = 0; t <= days; t++) {
-                labels.push(`${t}일`);
-                honorData.push(h);
-                votingData.push(intSqrt(h));
-                if (t < days) h = h === 0 ? 0 : Math.trunc(h * remain / 10000);
+        // 활동 게이트: Bresenham 방식 — activityPct%의 날이 active
+        function isActiveDay(d, activityPct) {
+            if (activityPct >= 100) return true;
+            if (activityPct <= 0) return false;
+            return Math.floor(d * activityPct / 100) > Math.floor((d - 1) * activityPct / 100);
+        }
+        // 안식일: (d - joinDay) % 7 == offset
+        function isSabbath(d, sabbathOffset) {
+            return (d % 7) === sabbathOffset;
+        }
+
+        function applyVolBonus(multBP, weeks) {
+            for (let i = 0; i < weeks; i++) {
+                multBP = Math.floor(multBP * VOL_NUM / VOL_DEN);
             }
-            return { labels, honorData, votingData };
+            return multBP;
         }
 
-        function calculateCartel(initialHonor, decayRateBp, days) {
-            return [1, 10, 100, 1000].map(m => {
-                const h = intDecay(initialHonor * m, decayRateBp, days);
-                return { multiplier: m, honor: h, voting: intSqrt(h) };
-            });
+        function computeVP(c, l, v, multBP) {
+            const base = intSqrt(c) + WEIGHT_L * intSqrt(l) + WEIGHT_V * intSqrt(v);
+            const sqrtFactor = intSqrt(multBP * BP);
+            return Math.floor(base * sqrtFactor / BP);
         }
 
-        // ─── 테마별 색상 ───
+        // 메인 시뮬레이션 — 일별 시계열 생성
+        function simulate(input) {
+            const { c, l, v, days, activityPct, sabbathOffset, autoVolunteer, initVolWeeks } = input;
+            const honors = [c, l, v];
+            const rates  = [BASE_DECAY_BP, BASE_DECAY_BP, BASE_DECAY_BP];
+            let multBP   = applyVolBonus(BP, initVolWeeks);
+            let volWeeks = initVolWeeks;
+
+            const series = {
+                days: [0],
+                honor: [[honors[0]], [honors[1]], [honors[2]]],
+                rate:  [BASE_DECAY_BP],
+                mult:  [multBP],
+                vp:    [computeVP(honors[0], honors[1], honors[2], multBP)]
+            };
+
+            for (let d = 1; d <= days; d++) {
+                for (let a = 0; a < 3; a++) {
+                    rates[a] = Math.floor(rates[a] * RATE_GROWTH_NUM / RATE_GROWTH_DEN);
+                    if (rates[a] > BP) rates[a] = BP;
+                }
+                const sabbath = isSabbath(d, sabbathOffset);
+                const active  = isActiveDay(d, activityPct);
+                if (!(sabbath || active)) {
+                    for (let a = 0; a < 3; a++) {
+                        if (rates[a] >= BP) honors[a] = 0;
+                        else if (honors[a] > 0) honors[a] = Math.floor(honors[a] * (BP - rates[a]) / BP);
+                    }
+                }
+                if (autoVolunteer && d % 7 === 0) {
+                    volWeeks++;
+                    multBP = Math.floor(multBP * VOL_NUM / VOL_DEN);
+                    // v3.1: 자본 보너스 max(VOL_CAPITAL_MIN, C × 1%)
+                    let capBonus = Math.floor(honors[0] * VOL_CAPITAL_PCT_BP / BP);
+                    if (capBonus < VOL_CAPITAL_MIN) capBonus = VOL_CAPITAL_MIN;
+                    honors[0] += capBonus;
+                }
+                series.days.push(d);
+                series.honor[0].push(honors[0]);
+                series.honor[1].push(honors[1]);
+                series.honor[2].push(honors[2]);
+                series.rate.push(rates[0]);
+                series.mult.push(multBP);
+                series.vp.push(computeVP(honors[0], honors[1], honors[2], multBP));
+            }
+            return series;
+        }
+
+        // D-day 추정 — 모든 축이 0이 되는 첫 날
+        function estimateDday(input) {
+            const MAX = 5000;
+            const sim = simulate({ ...input, days: MAX });
+            for (let i = 1; i < sim.days.length; i++) {
+                if (sim.honor[0][i] === 0 && sim.honor[1][i] === 0 && sim.honor[2][i] === 0) return i;
+            }
+            return MAX;
+        }
+        function estimateDdayPerAxis(input) {
+            const MAX = 5000;
+            const sim = simulate({ ...input, days: MAX });
+            const result = [MAX, MAX, MAX];
+            for (let a = 0; a < 3; a++) {
+                for (let i = 1; i < sim.days.length; i++) {
+                    if (sim.honor[a][i] === 0) { result[a] = i; break; }
+                }
+            }
+            return result;
+        }
+
+        // ════════════════════════════════════════════════════════════
+        // DOM 핸들
+        // ════════════════════════════════════════════════════════════
+        const $ = (id) => document.getElementById(id);
+        const htmlEl = document.documentElement;
+        let charts = {};
+
+        const FS = { tick: 22, title: 24, legend: 24, tickBold: 26, tooltipTitle: 22, tooltipBody: 20 };
+
         function chartColors() {
             const dark = htmlEl.classList.contains('dark');
             return {
-                text:          dark ? '#9CA3AF' : '#475569',
-                grid:          dark ? '#374151' : '#BAE6FD',   // 라이트=sky-200 (살짝 푸른 격자)
-                legend:        dark ? '#D1D5DB' : '#334155',
-                tooltipBg:     dark ? 'rgba(31,41,55,0.95)' : 'rgba(240,249,255,0.97)',  // 라이트=sky-50
-                tooltipText:   dark ? '#F3F4F6' : '#0F172A',
-                tooltipMute:   dark ? '#D1D5DB' : '#475569',
-                tooltipBorder: dark ? '#4B5563' : '#7DD3FC',   // sky-300
-                blue:          dark ? '#60A5FA' : '#2563EB',
-                emerald:       dark ? '#34D399' : '#059669',
-                yellow:        dark ? '#FBBF24' : '#D97706',
-                red:           dark ? '#F87171' : '#DC2626',
-                blueBg:        dark ? 'rgba(96,165,250,0.7)' : 'rgba(37,99,235,0.75)',
-                blueFill:      dark ? 'rgba(96,165,250,0.1)' : 'rgba(37,99,235,0.08)',
-                emeraldBg:     dark ? 'rgba(52,211,153,0.7)' : 'rgba(5,150,105,0.75)',
-                yellowBg:      dark ? 'rgba(251,191,36,0.7)' : 'rgba(217,119,6,0.75)',
-                redBg:         dark ? 'rgba(248,113,113,0.7)' : 'rgba(220,38,38,0.75)'
+                text:        dark ? '#9CA3AF' : '#475569',
+                grid:        dark ? '#374151' : '#BAE6FD',
+                legend:      dark ? '#D1D5DB' : '#334155',
+                tooltipBg:   dark ? 'rgba(31,41,55,0.95)' : 'rgba(240,249,255,0.97)',
+                tooltipText: dark ? '#F3F4F6' : '#0F172A',
+                tooltipMute: dark ? '#D1D5DB' : '#475569',
+                tooltipBorder: dark ? '#4B5563' : '#7DD3FC',
+                blue:    dark ? '#60A5FA' : '#2563EB',
+                emerald: dark ? '#34D399' : '#059669',
+                purple:  dark ? '#C084FC' : '#9333EA',
+                amber:   dark ? '#FBBF24' : '#D97706',
+                red:     dark ? '#F87171' : '#DC2626',
+                slate:   dark ? '#94A3B8' : '#475569',
+                blueBg:    dark ? 'rgba(96,165,250,0.7)' : 'rgba(37,99,235,0.75)',
+                emeraldBg: dark ? 'rgba(52,211,153,0.7)' : 'rgba(5,150,105,0.75)',
+                purpleBg:  dark ? 'rgba(192,132,252,0.7)' : 'rgba(147,51,234,0.75)',
+                amberBg:   dark ? 'rgba(251,191,36,0.7)' : 'rgba(217,119,6,0.75)',
+                redBg:     dark ? 'rgba(248,113,113,0.7)' : 'rgba(220,38,38,0.75)'
             };
         }
 
-        // ─── UI 업데이트 ───
-        function updateSimulation() {
-            const initialHonor = parseInt(elInitialHonor.value) || 0;
-            const decayRateBp  = parseInt(elDecayRateBp.value);
-            const days         = parseInt(elDaysElapsed.value);
-
-            const { labels, honorData, votingData } = calculateTrajectory(initialHonor, decayRateBp, days);
-            elCurrentHonor.textContent = honorData[honorData.length - 1].toLocaleString();
-            elVotingPower.textContent  = votingData[votingData.length - 1].toLocaleString();
-            renderTrajChart(labels, honorData, votingData);
-
-            const cartel = calculateCartel(initialHonor, decayRateBp, days);
-            renderCartelChart(cartel);
-            renderCartelCards(cartel);
+        function readInput() {
+            return {
+                c: parseInt($('honorC').value) || 0,
+                l: parseInt($('honorL').value) || 0,
+                v: parseInt($('honorV').value) || 0,
+                days: parseInt($('days').value),
+                activityPct: parseInt($('activityPct').value),
+                sabbathOffset: parseInt($('sabbathOffset').value),
+                autoVolunteer: $('autoVolunteer').checked,
+                initVolWeeks: parseInt($('initVolWeeks').value) || 0
+            };
         }
 
-        function renderTrajChart(labels, honorData, votingData) {
+        // ════════════════════════════════════════════════════════════
+        // 시나리오 프리셋 (F5)
+        // ════════════════════════════════════════════════════════════
+        const SCENARIOS = {
+            capitalist: { c: 100000, l: 0, v: 0, days: 365, activityPct: 0, sabbathOffset: 6, autoVolunteer: false, initVolWeeks: 0 },
+            worker:     { c: 0, l: 30000, v: 5000, days: 365, activityPct: 85, sabbathOffset: 6, autoVolunteer: false, initVolWeeks: 0 },
+            auditor:    { c: 0, l: 5000, v: 30000, days: 365, activityPct: 85, sabbathOffset: 6, autoVolunteer: false, initVolWeeks: 0 },
+            balanced:   { c: 10000, l: 10000, v: 10000, days: 365, activityPct: 90, sabbathOffset: 6, autoVolunteer: true, initVolWeeks: 0 },
+            elder:      { c: 20000, l: 20000, v: 20000, days: 365, activityPct: 95, sabbathOffset: 6, autoVolunteer: true, initVolWeeks: 520 },
+            bot:        { c: 100000, l: 0, v: 0, days: 365, activityPct: 0, sabbathOffset: 6, autoVolunteer: false, initVolWeeks: 0 }
+        };
+        function applyScenario(name) {
+            const s = SCENARIOS[name];
+            if (!s) return;
+            $('honorC').value = s.c; $('honorL').value = s.l; $('honorV').value = s.v;
+            $('days').value = s.days; $('activityPct').value = s.activityPct;
+            $('sabbathOffset').value = s.sabbathOffset; $('autoVolunteer').checked = s.autoVolunteer;
+            $('initVolWeeks').value = s.initVolWeeks;
+            updateAll();
+        }
+
+        // ════════════════════════════════════════════════════════════
+        // 탭 ① 시민 — 결과·차트
+        // ════════════════════════════════════════════════════════════
+        function renderCitizenTab() {
+            const inp = readInput();
+            $('daysLabel').textContent = inp.days + '일';
+            $('activityLabel').textContent = inp.activityPct + '%';
+            $('volWeeksLabel').textContent = inp.initVolWeeks + '주';
+
+            const sim = simulate(inp);
+            const last = sim.days.length - 1;
+            const [c0, l0, v0] = [inp.c, inp.l, inp.v];
+            const [c1, l1, v1] = [sim.honor[0][last], sim.honor[1][last], sim.honor[2][last]];
+
+            $('resC').textContent = c1.toLocaleString();
+            $('resL').textContent = l1.toLocaleString();
+            $('resV').textContent = v1.toLocaleString();
+            $('resCpct').textContent = c0 > 0 ? (100 * c1 / c0).toFixed(1) + '% 보존' : '—';
+            $('resLpct').textContent = l0 > 0 ? (100 * l1 / l0).toFixed(1) + '% 보존' : '—';
+            $('resVpct').textContent = v0 > 0 ? (100 * v1 / v0).toFixed(1) + '% 보존' : '—';
+
+            const mult = sim.mult[last];
+            $('resMult').textContent = mult.toLocaleString();
+            $('resMultX').textContent = (mult / BP).toFixed(3) + '×';
+
+            const vp = sim.vp[last];
+            $('resVP').textContent = vp.toLocaleString();
+
+            renderTrajChart(sim);
+        }
+
+        function renderTrajChart(sim) {
             const c = chartColors();
-            const ctx = document.getElementById('decayChart').getContext('2d');
-            if (trajChart) trajChart.destroy();
-            trajChart = new Chart(ctx, {
+            if (charts.traj) charts.traj.destroy();
+            const ctx = $('trajChart').getContext('2d');
+            // Sample if too many points
+            const STEP = Math.max(1, Math.floor(sim.days.length / 200));
+            const lbl = [], dC = [], dL = [], dV = [], dVP = [];
+            for (let i = 0; i < sim.days.length; i += STEP) {
+                lbl.push(sim.days[i] + 'd');
+                dC.push(sim.honor[0][i]);
+                dL.push(sim.honor[1][i]);
+                dV.push(sim.honor[2][i]);
+                dVP.push(sim.vp[i]);
+            }
+            charts.traj = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels,
+                    labels: lbl,
                     datasets: [
-                        { label: '명예 점수 (Honor)', data: honorData, borderColor: c.blue, backgroundColor: c.blueFill, borderWidth: 3, yAxisID: 'y',  fill: true,  tension: 0.3, pointRadius: 0 },
-                        { label: '투표 권한 (√)',    data: votingData, borderColor: c.emerald, borderWidth: 3, borderDash: [8,8], yAxisID: 'y1', tension: 0.3, pointRadius: 0 }
+                        { label: 'C 자본', data: dC, borderColor: c.blue,    borderWidth: 2, yAxisID: 'y',  tension: 0.2, pointRadius: 0 },
+                        { label: 'L 노동', data: dL, borderColor: c.emerald, borderWidth: 2, yAxisID: 'y',  tension: 0.2, pointRadius: 0 },
+                        { label: 'V 검증', data: dV, borderColor: c.purple,  borderWidth: 2, yAxisID: 'y',  tension: 0.2, pointRadius: 0 },
+                        { label: 'VP 의결권', data: dVP, borderColor: c.red, borderWidth: 3, borderDash: [6,6], yAxisID: 'y1', tension: 0.2, pointRadius: 0 }
                     ]
                 },
                 options: {
@@ -314,116 +567,323 @@
                     interaction: { mode: 'index', intersect: false },
                     plugins: {
                         legend: { labels: { color: c.legend, font: { size: FS.legend } } },
-                        tooltip: { backgroundColor: c.tooltipBg, titleColor: c.tooltipText, bodyColor: c.tooltipMute, borderColor: c.tooltipBorder, borderWidth: 2, titleFont: { size: FS.tooltipTitle }, bodyFont: { size: FS.tooltipBody }, padding: 12 }
+                        tooltip: { backgroundColor: c.tooltipBg, titleColor: c.tooltipText, bodyColor: c.tooltipMute, borderColor: c.tooltipBorder, borderWidth: 2, titleFont: { size: FS.tooltipTitle }, bodyFont: { size: FS.tooltipBody }, padding: 10 }
                     },
                     scales: {
-                        x:  { grid: { color: c.grid }, ticks: { color: c.text, font: { size: FS.tick } } },
-                        y:  { type: 'linear', position: 'left',  title: { display: true, text: '명예 점수', color: c.blue,    font: { size: FS.title, weight: 'bold' } }, grid: { color: c.grid }, ticks: { color: c.text, font: { size: FS.tick } } },
-                        y1: { type: 'linear', position: 'right', title: { display: true, text: '투표 권한', color: c.emerald, font: { size: FS.title, weight: 'bold' } }, grid: { drawOnChartArea: false }, ticks: { color: c.text, font: { size: FS.tick } } }
+                        x: { grid: { color: c.grid }, ticks: { color: c.text, font: { size: FS.tick }, maxTicksLimit: 10 } },
+                        y:  { type: 'linear', position: 'left',  title: { display: true, text: '명예 (C/L/V)', color: c.slate, font: { size: FS.title, weight: 'bold' } }, grid: { color: c.grid }, ticks: { color: c.text, font: { size: FS.tick } } },
+                        y1: { type: 'linear', position: 'right', title: { display: true, text: 'VP 의결권', color: c.red, font: { size: FS.title, weight: 'bold' } }, grid: { drawOnChartArea: false }, ticks: { color: c.text, font: { size: FS.tick } } }
                     }
                 }
             });
         }
 
-        function renderCartelChart(cartel) {
+        // ════════════════════════════════════════════════════════════
+        // 탭 ② 수명·감쇠 (F1+F2)
+        // ════════════════════════════════════════════════════════════
+        function renderLifespanTab() {
+            const inp = readInput();
+            const dday = estimateDday(inp);
+            const perAxis = estimateDdayPerAxis(inp);
+
+            $('ddayResult').textContent = dday >= 5000 ? '∞ (≥5000일)' : `D-${dday}`;
+            $('ddayBreakdown').textContent = `C: ${perAxis[0] >= 5000 ? '∞' : 'D-'+perAxis[0]} · L: ${perAxis[1] >= 5000 ? '∞' : 'D-'+perAxis[1]} · V: ${perAxis[2] >= 5000 ? '∞' : 'D-'+perAxis[2]}`;
+
+            renderRateChart();
+            renderLifelineTable();
+        }
+        function renderRateChart() {
             const c = chartColors();
-            const ctx = document.getElementById('cartelChart').getContext('2d');
-            if (cartelChart) cartelChart.destroy();
-            cartelChart = new Chart(ctx, {
-                type: 'bar',
+            if (charts.rate) charts.rate.destroy();
+            const lbl = [], rateData = [];
+            let rate = BASE_DECAY_BP;
+            for (let n = 0; n <= 1000; n += 5) {
+                lbl.push(n + 'd');
+                rateData.push((rate / 100).toFixed(2));
+                for (let k = 0; k < 5; k++) {
+                    rate = Math.floor(rate * RATE_GROWTH_NUM / RATE_GROWTH_DEN);
+                    if (rate > BP) rate = BP;
+                }
+            }
+            const ctx = $('rateChart').getContext('2d');
+            charts.rate = new Chart(ctx, {
+                type: 'line',
                 data: {
-                    labels: cartel.map(it => `${it.multiplier}× 기여`),
-                    datasets: [{
-                        label: '투표 권한 (정수 √)',
-                        data: cartel.map(it => it.voting),
-                        backgroundColor: [c.blueBg, c.emeraldBg, c.yellowBg, c.redBg],
-                        borderColor:     [c.blue,   c.emerald,   c.yellow,   c.red],
-                        borderWidth: 3
-                    }]
+                    labels: lbl,
+                    datasets: [{ label: '감쇠율 %', data: rateData, borderColor: c.red, backgroundColor: 'rgba(248,113,113,0.15)', borderWidth: 3, fill: true, tension: 0.3, pointRadius: 0 }]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     plugins: {
                         legend: { display: false },
-                        tooltip: {
-                            backgroundColor: c.tooltipBg, titleColor: c.tooltipText, bodyColor: c.tooltipMute, borderColor: c.tooltipBorder, borderWidth: 2, titleFont: { size: FS.tooltipTitle }, bodyFont: { size: FS.tooltipBody }, padding: 12,
-                            callbacks: { afterLabel: (ctx) => `명예: ${cartel[ctx.dataIndex].honor.toLocaleString()}` }
-                        }
+                        tooltip: { backgroundColor: c.tooltipBg, titleColor: c.tooltipText, bodyColor: c.tooltipMute, borderColor: c.tooltipBorder, borderWidth: 2, titleFont: { size: FS.tooltipTitle }, bodyFont: { size: FS.tooltipBody } },
+                        annotation: { annotations: { line462: { type: 'line', xMin: 92, xMax: 92, borderColor: c.red, borderWidth: 2, borderDash: [6,6] } } }
                     },
                     scales: {
-                        x: { grid: { display: false }, ticks: { color: c.text, font: { weight: 'bold', size: FS.tickBold } } },
-                        y: { grid: { color: c.grid }, ticks: { color: c.text, font: { size: FS.tick } }, title: { display: true, text: '투표 권한', color: c.emerald, font: { size: FS.title, weight: 'bold' } } }
+                        x: { grid: { color: c.grid }, ticks: { color: c.text, font: { size: FS.tick }, maxTicksLimit: 12 } },
+                        y: { grid: { color: c.grid }, ticks: { color: c.text, font: { size: FS.tick }, callback: v => v + '%' }, title: { display: true, text: '감쇠율', color: c.red, font: { size: FS.title, weight: 'bold' } } }
                     }
                 }
             });
         }
-
-        function renderCartelCards(cartel) {
-            const base = cartel[0].voting || 1;
-            const dark = htmlEl.classList.contains('dark');
-            const palette = dark
-                ? ['border-blue-500 text-blue-300', 'border-emerald-500 text-emerald-300', 'border-yellow-500 text-yellow-300', 'border-red-500 text-red-300']
-                : ['border-blue-500 text-blue-700',  'border-emerald-500 text-emerald-700',  'border-yellow-500 text-yellow-700',  'border-red-500 text-red-700'];
-            const cardBg = dark ? 'bg-gray-900' : 'bg-sky-50';
-            elCartelInsight.innerHTML = cartel.map((c, i) => {
-                const ratio = (c.voting / base).toFixed(2);
-                return `
-                    <div class="${cardBg} border-2 ${palette[i].split(' ')[0]} rounded-lg p-3">
-                        <div class="text-xs uppercase tracking-wider text-slate-500 dark:text-gray-500">${c.multiplier}× 기여</div>
-                        <div class="text-2xl font-extrabold mt-1 ${palette[i].split(' ')[1]}">${c.voting.toLocaleString()}</div>
-                        <div class="text-xs text-slate-600 dark:text-gray-400 mt-1">1× 대비 <strong class="text-slate-900 dark:text-white">${ratio}×</strong> 권력</div>
-                    </div>
-                `;
+        function renderLifelineTable() {
+            const inp = readInput();
+            const rows = [10, 30, 50, 70, 85, 95, 100];
+            const tbody = $('lifelineTable');
+            tbody.innerHTML = rows.map(pct => {
+                const baseInp = { c: 10000, l: 10000, v: 10000, activityPct: pct, sabbathOffset: 6, autoVolunteer: false, initVolWeeks: 0 };
+                const noVol = estimateDday(baseInp);
+                const withVol = estimateDday({ ...baseInp, autoVolunteer: true });
+                const diff = withVol - noVol;
+                return `<tr class="border-b border-sky-100 dark:border-gray-700 ${pct === inp.activityPct ? 'bg-sky-50 dark:bg-gray-700/50 font-bold' : ''}">
+                    <td class="px-3 py-2">${pct}%</td>
+                    <td class="px-3 py-2 text-right">${noVol >= 5000 ? '∞' : 'D-'+noVol}</td>
+                    <td class="px-3 py-2 text-right">${withVol >= 5000 ? '∞' : 'D-'+withVol}</td>
+                    <td class="px-3 py-2 text-right text-emerald-600 dark:text-emerald-400">${diff >= 0 ? '+' + diff : diff}일</td>
+                </tr>`;
             }).join('');
         }
 
-        // ─── 테마 토글 ───
-        function setTheme(mode) {
-            if (mode === 'dark') {
-                htmlEl.classList.add('dark');
-                elThemeLabel.textContent = '◐ 라이트 모드';
-            } else {
-                htmlEl.classList.remove('dark');
-                elThemeLabel.textContent = '◑ 다크 모드';
+        // ════════════════════════════════════════════════════════════
+        // 탭 ③ 봉사 30년 (F4)
+        // ════════════════════════════════════════════════════════════
+        function renderVolunteerTab() {
+            const c = chartColors();
+            if (charts.vol) charts.vol.destroy();
+            const lbl = [], multData = [], vpData = [];
+            let mult = BP;
+            for (let w = 0; w <= 1560; w++) {
+                if (w % 13 === 0) { // every quarter
+                    lbl.push((w / 52).toFixed(1) + 'y');
+                    multData.push(mult / BP);
+                    vpData.push(intSqrt(mult * BP) / BP);
+                }
+                mult = Math.floor(mult * VOL_NUM / VOL_DEN);
             }
-            try { localStorage.setItem('seum-theme', mode); } catch (e) {}
-            updateSimulation();
-        }
-        elThemeToggle.addEventListener('click', () => {
-            setTheme(htmlEl.classList.contains('dark') ? 'light' : 'dark');
-        });
-
-        // ─── 슬라이더 ↔ 숫자 입력 양방향 동기 ───
-        function bindRangeWithInput(rangeEl, inputEl) {
-            const min = parseInt(rangeEl.min), max = parseInt(rangeEl.max);
-            rangeEl.addEventListener('input', () => {
-                inputEl.value = rangeEl.value;
-                updateSimulation();
-            });
-            inputEl.addEventListener('input', () => {
-                const v = parseInt(inputEl.value);
-                if (!isNaN(v)) {
-                    rangeEl.value = Math.min(max, Math.max(min, v));
-                    updateSimulation();
+            const ctx = $('volChart').getContext('2d');
+            charts.vol = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: lbl,
+                    datasets: [
+                        { label: '명예 multBP/BP', data: multData, borderColor: c.amber,   borderWidth: 3, yAxisID: 'y',  tension: 0.3, pointRadius: 0 },
+                        { label: 'VP factor √',    data: vpData,   borderColor: c.emerald, borderWidth: 3, borderDash: [6,6], yAxisID: 'y1', tension: 0.3, pointRadius: 0 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { labels: { color: c.legend, font: { size: FS.legend } } },
+                        tooltip: { backgroundColor: c.tooltipBg, titleColor: c.tooltipText, bodyColor: c.tooltipMute, borderColor: c.tooltipBorder, borderWidth: 2, titleFont: { size: FS.tooltipTitle }, bodyFont: { size: FS.tooltipBody } }
+                    },
+                    scales: {
+                        x: { grid: { color: c.grid }, ticks: { color: c.text, font: { size: FS.tick }, maxTicksLimit: 15 } },
+                        y:  { type: 'logarithmic', position: 'left',  title: { display: true, text: '명예 배수 (log)', color: c.amber,   font: { size: FS.title, weight: 'bold' } }, grid: { color: c.grid }, ticks: { color: c.text, font: { size: FS.tick } } },
+                        y1: { type: 'logarithmic', position: 'right', title: { display: true, text: 'VP factor (log)', color: c.emerald, font: { size: FS.title, weight: 'bold' } }, grid: { drawOnChartArea: false }, ticks: { color: c.text, font: { size: FS.tick } } }
+                    }
                 }
             });
-            inputEl.addEventListener('blur', () => {
-                let v = parseInt(inputEl.value);
-                if (isNaN(v) || v < min) v = min;
-                else if (v > max) v = max;
-                inputEl.value = v;
-                rangeEl.value = v;
-                updateSimulation();
-            });
+            // Milestones
+            const ms = [1, 5, 10, 15, 20];
+            $('volMilestones').innerHTML = ms.map(y => {
+                let m = BP;
+                for (let i = 0; i < y * 52; i++) m = Math.floor(m * VOL_NUM / VOL_DEN);
+                const vpf = intSqrt(m * BP) / BP;
+                return `<div class="p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg">
+                    <div class="text-xs uppercase text-slate-500 dark:text-gray-400">${y}년</div>
+                    <div class="text-xl font-extrabold text-amber-600 dark:text-amber-400 mt-1">${(m/BP).toFixed(m/BP > 100 ? 0 : 2)}×</div>
+                    <div class="text-xs text-slate-500 dark:text-gray-500 mt-1">VP × ${vpf.toFixed(2)}</div>
+                </div>`;
+            }).join('');
         }
 
-        // ─── Events ───
-        elInitialHonor.addEventListener('input', updateSimulation);
-        bindRangeWithInput(elDecayRateBp, elDecayRateBpNum);
-        bindRangeWithInput(elDaysElapsed, elDaysElapsedNum);
+        // ════════════════════════════════════════════════════════════
+        // 탭 ④ 비교 (F3 + 카르텔 + F6)
+        // ════════════════════════════════════════════════════════════
+        function renderCompareTab() {
+            renderVsChart();
+            renderCartelChart();
+            renderArchetypes();
+        }
+        function renderVsChart() {
+            const c = chartColors();
+            if (charts.vs) charts.vs.destroy();
+            const baseInp = readInput();
+            const aInp = { c: +$('aC').value || 0, l: +$('aL').value || 0, v: +$('aV').value || 0, days: baseInp.days, activityPct: +$('aAct').value || 0, sabbathOffset: 6, autoVolunteer: $('aVol').checked, initVolWeeks: 0 };
+            const bInp = { c: +$('bC').value || 0, l: +$('bL').value || 0, v: +$('bV').value || 0, days: baseInp.days, activityPct: +$('bAct').value || 0, sabbathOffset: 6, autoVolunteer: $('bVol').checked, initVolWeeks: 0 };
+            const aSim = simulate(aInp);
+            const bSim = simulate(bInp);
+            const STEP = Math.max(1, Math.floor(aSim.days.length / 150));
+            const lbl = [], aData = [], bData = [];
+            for (let i = 0; i < aSim.days.length; i += STEP) {
+                lbl.push(aSim.days[i] + 'd');
+                aData.push(aSim.vp[i]);
+                bData.push(bSim.vp[i]);
+            }
+            const ctx = $('vsChart').getContext('2d');
+            charts.vs = new Chart(ctx, {
+                type: 'line',
+                data: { labels: lbl, datasets: [
+                    { label: 'A의 VP', data: aData, borderColor: c.blue, borderWidth: 3, tension: 0.2, pointRadius: 0 },
+                    { label: 'B의 VP', data: bData, borderColor: c.emerald, borderWidth: 3, tension: 0.2, pointRadius: 0 }
+                ]},
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: c.legend, font: { size: FS.legend } } }, tooltip: { backgroundColor: c.tooltipBg, titleColor: c.tooltipText, bodyColor: c.tooltipMute, borderColor: c.tooltipBorder, borderWidth: 2, titleFont: { size: FS.tooltipTitle }, bodyFont: { size: FS.tooltipBody } } },
+                    scales: { x: { grid: { color: c.grid }, ticks: { color: c.text, font: { size: FS.tick }, maxTicksLimit: 10 } }, y: { grid: { color: c.grid }, ticks: { color: c.text, font: { size: FS.tick } } } }
+                }
+            });
+        }
+        function renderCartelChart() {
+            const c = chartColors();
+            if (charts.cartel) charts.cartel.destroy();
+            const inp = readInput();
+            const cartel = [1, 10, 100, 1000].map(m => {
+                const sim = simulate({ ...inp, c: inp.c * m, l: inp.l * m, v: inp.v * m });
+                const last = sim.days.length - 1;
+                return { mult: m, vp: sim.vp[last] };
+            });
+            const ctx = $('cartelChart').getContext('2d');
+            charts.cartel = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: cartel.map(c => `${c.mult}× 명예`),
+                    datasets: [{ label: 'VP', data: cartel.map(c => c.vp), backgroundColor: [c.blueBg, c.emeraldBg, c.amberBg, c.redBg], borderColor: [c.blue, c.emerald, c.amber, c.red], borderWidth: 3 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { backgroundColor: c.tooltipBg, titleColor: c.tooltipText, bodyColor: c.tooltipMute, borderColor: c.tooltipBorder, borderWidth: 2, titleFont: { size: FS.tooltipTitle }, bodyFont: { size: FS.tooltipBody } } },
+                    scales: { x: { grid: { display: false }, ticks: { color: c.text, font: { weight: 'bold', size: FS.tickBold } } }, y: { grid: { color: c.grid }, ticks: { color: c.text, font: { size: FS.tick } } } }
+                }
+            });
+            const base = cartel[0].vp || 1;
+            const palette = ['blue', 'emerald', 'amber', 'red'];
+            $('cartelInsight').innerHTML = cartel.map((d, i) => {
+                const r = (d.vp / base).toFixed(2);
+                return `<div class="p-3 bg-${palette[i]}-50 dark:bg-${palette[i]}-900/30 border-2 border-${palette[i]}-400 rounded-lg">
+                    <div class="text-xs uppercase text-slate-500 dark:text-gray-400">${d.mult}× 명예</div>
+                    <div class="text-xl font-extrabold text-${palette[i]}-600 dark:text-${palette[i]}-400 mt-1">${d.vp.toLocaleString()}</div>
+                    <div class="text-xs text-slate-600 dark:text-gray-400 mt-1">1× 대비 <strong>${r}×</strong></div>
+                </div>`;
+            }).join('');
+        }
+        function renderArchetypes() {
+            // 같은 자원 (총 30000 명예 + 85% 활동 + 매주 봉사), 1년 후 VP
+            const baseOpts = { days: 365, activityPct: 85, sabbathOffset: 6, autoVolunteer: true, initVolWeeks: 0 };
+            const arche = [
+                { name: '자본 집중', desc: 'C=30000', c: 30000, l: 0, v: 0,        color: 'blue' },
+                { name: '노동 집중', desc: 'L=30000', c: 0, l: 30000, v: 0,        color: 'emerald' },
+                { name: '검증 집중', desc: 'V=30000', c: 0, l: 0, v: 30000,        color: 'purple' },
+                { name: '균형형',    desc: '각 10000', c: 10000, l: 10000, v: 10000, color: 'amber' }
+            ];
+            const results = arche.map(a => {
+                const sim = simulate({ ...baseOpts, c: a.c, l: a.l, v: a.v });
+                return { ...a, vp: sim.vp[sim.vp.length - 1] };
+            });
+            const maxVp = Math.max(...results.map(r => r.vp), 1);
+            $('archetypeCards').innerHTML = results.map(r => `
+                <div class="p-4 bg-white dark:bg-gray-800 border-2 border-${r.color}-400 dark:border-${r.color}-500 rounded-xl">
+                    <div class="text-xs uppercase text-slate-500 dark:text-gray-400">${r.name}</div>
+                    <div class="text-sm font-semibold text-slate-700 dark:text-gray-300 mt-1">${r.desc}</div>
+                    <div class="text-2xl font-extrabold text-${r.color}-600 dark:text-${r.color}-400 mt-2">${r.vp.toLocaleString()}</div>
+                    <div class="text-xs text-slate-500 dark:text-gray-500 mt-1">상대 ${(100 * r.vp / maxVp).toFixed(0)}%</div>
+                </div>
+            `).join('');
+        }
 
-        // ─── Initial Load ───
-        // 기본 = 라이트. 사용자 저장 선택이 있으면 그것 우선.
+        // ════════════════════════════════════════════════════════════
+        // 탭 ⑤ 검증 (F7)
+        // ════════════════════════════════════════════════════════════
+        function renderVerifyTab() {
+            const inp = readInput();
+            const sim = simulate(inp);
+            const last = sim.days.length - 1;
+            const rows = [
+                ['입력 C, L, V', `${inp.c}, ${inp.l}, ${inp.v}`],
+                ['경과 일수', inp.days],
+                ['활동률', inp.activityPct + '%'],
+                ['안식일 offset', inp.sabbathOffset],
+                ['매주 봉사', inp.autoVolunteer ? '예' : '아니오'],
+                ['초기 봉사 누적 주', inp.initVolWeeks],
+                ['─── 출력 ───', ''],
+                ['getCurrentHonor(_, CAPITAL)', sim.honor[0][last]],
+                ['getCurrentHonor(_, LABOR)', sim.honor[1][last]],
+                ['getCurrentHonor(_, VERIFICATION)', sim.honor[2][last]],
+                ['최종 감쇠율 BP (day n)', sim.rate[last] + ` (${(sim.rate[last]/100).toFixed(2)}%)`],
+                ['volunteerMultBP (1.01342^weeks)', sim.mult[last]],
+                ['√(multBP × BP) / BP factor', (intSqrt(sim.mult[last] * BP) / BP).toFixed(4)],
+                ['getVotingPower(_)', sim.vp[last]]
+            ];
+            $('verifyTable').innerHTML = rows.map(([k, v]) => `
+                <div class="flex justify-between items-center px-3 py-2 ${k.startsWith('─') ? 'bg-sky-100 dark:bg-gray-700 font-bold' : 'border-b border-sky-100 dark:border-gray-700'}">
+                    <code class="text-sm text-slate-700 dark:text-gray-300">${k}</code>
+                    <span class="text-sm font-mono text-blue-600 dark:text-blue-400">${typeof v === 'number' ? v.toLocaleString() : v}</span>
+                </div>
+            `).join('');
+        }
+
+        // ════════════════════════════════════════════════════════════
+        // 탭 전환 + 전체 업데이트
+        // ════════════════════════════════════════════════════════════
+        let currentTab = 'citizen';
+        function showTab(name) {
+            currentTab = name;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === name));
+            document.querySelectorAll('[data-section]').forEach(s => s.classList.toggle('hidden', s.dataset.section !== name));
+            updateCurrentTab();
+        }
+        function updateCurrentTab() {
+            // Always render Tab1 for sidebar values
+            if (currentTab === 'citizen')   renderCitizenTab();
+            if (currentTab === 'lifespan')  { renderCitizenTab(); renderLifespanTab(); }
+            if (currentTab === 'volunteer') { renderCitizenTab(); renderVolunteerTab(); }
+            if (currentTab === 'compare')   { renderCitizenTab(); renderCompareTab(); }
+            if (currentTab === 'verify')    { renderCitizenTab(); renderVerifyTab(); }
+        }
+        function updateAll() { updateCurrentTab(); }
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => showTab(btn.dataset.tab));
+        });
+
+        // ════════════════════════════════════════════════════════════
+        // CSV 내보내기 (F8)
+        // ════════════════════════════════════════════════════════════
+        $('csvExport').addEventListener('click', () => {
+            const inp = readInput();
+            const sim = simulate(inp);
+            let csv = 'day,honorC,honorL,honorV,rate_bp,multBP,vp\n';
+            for (let i = 0; i < sim.days.length; i++) {
+                csv += [sim.days[i], sim.honor[0][i], sim.honor[1][i], sim.honor[2][i], sim.rate[i], sim.mult[i], sim.vp[i]].join(',') + '\n';
+            }
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `seum-sim-${Date.now()}.csv`;
+            link.click();
+        });
+
+        // ════════════════════════════════════════════════════════════
+        // 테마 + 이벤트 바인딩
+        // ════════════════════════════════════════════════════════════
+        function setTheme(mode) {
+            if (mode === 'dark') { htmlEl.classList.add('dark'); $('themeLabel').textContent = '◐ 라이트'; }
+            else { htmlEl.classList.remove('dark'); $('themeLabel').textContent = '◑ 다크'; }
+            try { localStorage.setItem('seum-theme', mode); } catch (e) {}
+            updateAll();
+        }
+        $('themeToggle').addEventListener('click', () => setTheme(htmlEl.classList.contains('dark') ? 'light' : 'dark'));
+
+        $('scenarioPreset').addEventListener('change', (e) => { if (e.target.value) applyScenario(e.target.value); });
+
+        ['honorC','honorL','honorV','days','activityPct','sabbathOffset','autoVolunteer','initVolWeeks',
+         'aC','aL','aV','aAct','aVol','bC','bL','bV','bAct','bVol'].forEach(id => {
+            const el = $(id);
+            if (el) el.addEventListener('input', updateAll);
+            if (el && el.type === 'checkbox') el.addEventListener('change', updateAll);
+        });
+
         const saved = (() => { try { return localStorage.getItem('seum-theme'); } catch (e) { return null; } })();
         setTheme(saved || 'light');
     </script>

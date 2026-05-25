@@ -1,0 +1,16 @@
+{
+  "name": "seum-standard-tests",
+  "version": "3.1.0",
+  "description": "Test suite for SeumStandard v3.1 — Ethereum Solidity contract.",
+  "scripts": {
+    "test": "hardhat test",
+    "coverage": "hardhat coverage",
+    "compile": "hardhat compile"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.22.0",
+    "chai": "^4.4.0",
+    "ethers": "^6.13.0"
+  }
+}

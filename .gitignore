@@ -1,0 +1,40 @@
+# --- Node / Hardhat ---
+node_modules/
+artifacts/
+cache/
+.cache/
+coverage/
+coverage.json
+typechain/
+typechain-types/
+*.tsbuildinfo
+.env
+.env.local
+
+# --- Rust / CosmWasm ---
+target/
+**/target/
+Cargo.lock.bak
+*.wasm.bak
+
+# --- Go (zion1-daemon) ---
+zion1-daemon/bin/
+zion1-daemon/dist/
+zion1-daemon/*.exe
+zion1-daemon/zion1-daemon
+zion1-daemon/config.yaml
+zion1-daemon/data/
+
+# --- OS / Editor ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+
+# --- Secrets ---
+*.key
+*.pem
+secrets/
+.secrets/
