@@ -1,6 +1,6 @@
 # 세션 요약 — SeumStandard v3.1 작업 (2026-05-23 ~ 05-25)
 
-**상태**: ✅ 양 컨트랙트 빌드·테스트 완료. 데몬 스캐폴드 완료. 다음 슬라이스 = 데몬 TODO 채우기 또는 CW 단위 테스트.
+**상태**: ✅ 양 컨트랙트 빌드·테스트 완료. **CW 단위 테스트 31 통과 (EVM 31과 동수)**. 데몬 스캐폴드 완료. 다음 슬라이스 = 데몬 TODO 또는 52주 봉사 통합.
 
 ---
 
@@ -100,9 +100,22 @@ pnpm test         # ✅ 31 passing, 1 pending (intentional skip), 0 failing (513
 cd D:\FSoZ\jjjajh_STD_CW
 cargo check                                              # ✅ 11.4s
 cargo build                                              # ✅ 5.9s
-cargo test                                               # ✅ 0 passed / 0 failed (스캐폴드만)
+cargo test                                               # ✅ 31 passed / 0 failed / 1 ignored (Slice A 완료)
 cargo build --target wasm32-unknown-unknown --release    # ✅ 15s → 275KB .wasm
 ```
+
+CW 테스트 31개 (EVM 31과 동수, 행동적 동등성):
+- PoP + join (4) — 직역 4 (EVM의 ECDSA "Bad sig" → CW의 `OnlyAttester sender` 검사)
+- Funds 검사 (2) — CW 특화: wrong denom + zero funds (EVM의 ETH 차단 대체)
+- ContributeCapital (4) — 직역 1 + CW 특화 3 (non-citizen, no-PoP, other-user-no-PoP)
+- attestHonor (3) — 직역 (LABOR/VERIFICATION 누적, CAPITAL 차단)
+- attestDay (2) — 직역 (응답 attr, future day 차단)
+- 감쇠 (4) — 직역 (매일/안식일/active gate/90일 cap)
+- 봉사 v3.1 (2) — 직역 (multBP=10134, 자본 +100)
+- ragequit (3) — CW 강화: 실제 utrg 잔고 이동 검증 (시민/컨트랙트)
+- 거버넌스 (5) — 직역 + addr_validate
+- VP 합성 (2) — 직역 (1100 정확 일치)
+- (+1 ignored) — 52주 봉사 통합 (EVM과 동일 skip)
 
 ---
 
@@ -175,7 +188,7 @@ ls -lh D:\FSoZ\artifacts\contracts\SeumStandard.sol\SeumStandard.json
 
 | # | 작업 | 의존성 | 추정 |
 |---|---|---|---|
-| **A** | **CW 단위 테스트 작성** (cw-multi-test, Solidity 31개 미러) | 즉시 | 4~8시간 |
+| ~~A~~ | ~~CW 단위 테스트 작성 (cw-multi-test, Solidity 31개 미러)~~ ✅ **2026-05-25 완료 (31통과)** | — | — |
 | **B** | **Go 설치 + 데몬 핵심 TODO 채우기** (ABI 인코딩, EVM tx, CometBFT 디코딩) | Go ~150MB | 2~3일 |
 | **C** | 52주 봉사 통합 테스트 (Solidity skip 풀기) | 즉시 | 1~2시간 |
 | **D** | Phase 2 멀티시그 attester 설계 | — | 1일 |
@@ -200,8 +213,9 @@ ls -lh D:\FSoZ\artifacts\contracts\SeumStandard.sol\SeumStandard.json
 - 단위 테스트
 
 ### CW 컨트랙트
-- 단위 테스트 (Solidity 31개 미러 권장)
-- (선택) cw-multi-test 통합 시나리오
+- ~~단위 테스트 (Solidity 31개 미러)~~ ✅ 31통과 (2026-05-25)
+- (선택) cw-multi-test 다중 시나리오 추가 (현재 단일 시민 위주)
+- (선택) hasBadge 쿼리 추가 — 거버넌스 테스트 상태 직접 검증 위해
 
 ### Solidity
 - 52주 봉사 통합 테스트 (현재 `this.skip()`)

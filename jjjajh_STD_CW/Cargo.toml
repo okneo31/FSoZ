@@ -35,3 +35,4 @@ schemars = "0.8"
 
 [dev-dependencies]
 cw-multi-test = "1.2"
+anyhow = "1.0"
