@@ -2,51 +2,60 @@
 # 실제 사용 시 config.yaml로 복사 후 비밀값 채우기
 
 zion:
-  # CometBFT RPC WebSocket endpoint
-  rpc_url: "ws://localhost:26657/websocket"
-  # 또는 HTTP만 쓸 경우 (subscribe 안 됨)
+  # CometBFT RPC endpoint (HTTP — 내부적으로 ws upgrade)
+  rpc_url: "http://localhost:26657"
   http_url: "http://localhost:26657"
-  # gRPC 엔드포인트 (state query용)
   grpc_url: "localhost:9090"
   chain_id: "zion-local-1"
 
 evm:
-  # EVM RPC endpoint
   rpc_url: "http://localhost:8545"
   chain_id: 31337                              # Hardhat localhost
-  # SeumStandard 컨트랙트 주소
   contract_address: "0x0000000000000000000000000000000000000000"
-  # tx 가스 설정
   gas_limit: 500000
   gas_price_gwei: 20
 
 attester:
-  # 운영 시 Vault/HSM에서 로드 권장. 여기선 평문 키 (테스트 한정)
+  # 키 source: "plaintext" (개발/테스트) 또는 "vault" (production)
+  source: "plaintext"
+
+  # plaintext 모드 — yaml에 직접 hex 키 (운영 금지)
   private_key_hex: "0000000000000000000000000000000000000000000000000000000000000000"
-  # attester EVM 주소 (서명 검증용 — public 정보)
   evm_address: "0x0000000000000000000000000000000000000000"
 
+  # vault 모드 — Vault KV v2 secret에서 fetch (Phase 1.5)
+  vault:
+    addr: "https://vault.internal:8200"
+    mount: "secret"
+    path: "zion1/attester"
+    key_field: "private_key_hex"
+    token_env: "VAULT_TOKEN"                   # VAULT_TOKEN 환경 변수 설정 필요
+
 daemon:
-  # 처리 후 nonce/jobId 저장 위치 (in-memory 또는 파일)
-  state_path: "./state.json"
-  # event poll interval (subscribe 실패 시 fallback)
+  # state 백엔드: "memory" (json 스냅샷) 또는 "bolt" (BoltDB embedded)
+  state_type: "bolt"
+  state_path: "./state.db"                     # bolt면 .db, memory면 .json
   poll_interval_seconds: 10
-  # tx 만료 시간 (서명 expiry)
   signature_ttl_seconds: 3600
-  # 재시도 정책
   max_retries: 5
   retry_backoff_seconds: 30
-  # 로그 레벨
-  log_level: "info"                            # debug / info / warn / error
+  log_level: "info"
 
 handlers:
-  # 활성화할 핸들러 (false면 그 이벤트 무시)
+  # Zion → EVM (정방향)
   pop_attest: true
-  bridge_mint: false                           # x/seum 모듈 ship 후 true
-  job_attest: false                            # Phase 2 — 명세 확정 후
-  day_attest: false                            # Phase 2
+  bridge_mint: true                            # x/seum 모듈 ship 후 true
+  honor_attest: true
+  day_attest: true
+
+  # EVM → Zion (역방향, Phase 2 cosmos-sdk client 필요)
+  evm_ragequit: false                          # WatchRagequit + 로깅만, broadcaster nil (현 단계)
 
 mock:
-  # 개발 시 mock 이벤트 주입 모드
   enabled: false
   fixtures_path: "./fixtures/events.json"
+
+metrics:
+  # Prometheus /metrics endpoint
+  enabled: true
+  addr: ":9100"                                # http://localhost:9100/metrics

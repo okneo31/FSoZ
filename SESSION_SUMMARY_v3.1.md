@@ -1,6 +1,6 @@
 # 세션 요약 — SeumStandard v3.1 작업 (2026-05-23 ~ 05-25)
 
-**상태**: ✅ 양 컨트랙트 빌드·테스트 완료. **CW 단위 테스트 31 통과 (EVM 31과 동수)**. 데몬 스캐폴드 완료. 다음 슬라이스 = 데몬 TODO 또는 52주 봉사 통합.
+**상태**: ✅ 양 컨트랙트 빌드·테스트 완료 (EVM 31 / CW 31). **데몬 Phase B 완료 — Full TODO (signer ABI / evmclient / zionclient / 핸들러 4종 / BoltDB / Vault / Prometheus / 단위 테스트 21)**. 다음 = 52주 봉사 통합 또는 Zion x/seum 모듈 실구현.
 
 ---
 
@@ -130,7 +130,7 @@ CW 테스트 31개 (EVM 31과 동수, 행동적 동등성):
 | **rustup** | **1.29.0** | scoop: `/c/Users/jjjaj/scoop/apps/rustup/` |
 | **cargo bin** | (rustup) | `C:\Users\jjjaj\.cargo\bin` |
 | **wasm32 target** | rust-std | rustup-managed |
-| Go | ❌ 미설치 | (데몬 빌드 시 필요) |
+| **Go** | **1.26.3** | scoop: `/c/Users/jjjaj/scoop/apps/go/current/bin` |
 | Docker | (미확인) | (CW reproducible build 시 필요) |
 | gh CLI | (설치됨, 인증됨) | private Zion 리포 접근 |
 
@@ -189,7 +189,7 @@ ls -lh D:\FSoZ\artifacts\contracts\SeumStandard.sol\SeumStandard.json
 | # | 작업 | 의존성 | 추정 |
 |---|---|---|---|
 | ~~A~~ | ~~CW 단위 테스트 작성 (cw-multi-test, Solidity 31개 미러)~~ ✅ **2026-05-25 완료 (31통과)** | — | — |
-| **B** | **Go 설치 + 데몬 핵심 TODO 채우기** (ABI 인코딩, EVM tx, CometBFT 디코딩) | Go ~150MB | 2~3일 |
+| ~~B~~ | ~~Go 설치 + 데몬 핵심 TODO 채우기 (Full)~~ ✅ **2026-05-25 완료 (21 unit tests)** | — | — |
 | **C** | 52주 봉사 통합 테스트 (Solidity skip 풀기) | 즉시 | 1~2시간 |
 | **D** | Phase 2 멀티시그 attester 설계 | — | 1일 |
 | **E** | EVM RagequitRequest 감시 핸들러 (역방향 unlock) | B 의존 | 1일 |
@@ -202,15 +202,21 @@ ls -lh D:\FSoZ\artifacts\contracts\SeumStandard.sol\SeumStandard.json
 
 ## 7. 미해결 핵심 TODO
 
-### 데몬 (zion1-daemon)
-- `internal/signer/signer.go` — `abi.Arguments.Pack(...)` 실제 ABI 인코딩 (현재 placeholder는 컨트랙트와 *불일치*)
-- `internal/evmclient/client.go` — `bind.NewKeyedTransactorWithChainID` + abigen 결과로 컨트랙트 호출
-- `internal/zionclient/client.go` — `EventDataTx → abci.Event[]` 디코딩
-- 다른 핸들러: `bridge_mint.go`, `attest_honor.go`, `attest_day.go`, 역방향 ragequit
-- 영구 store: SQLite/BoltDB (현재 in-memory + JSON snapshot)
-- Vault 키 통합 (평문 hex 운영 금지)
-- 메트릭 (Prometheus)
-- 단위 테스트
+### 데몬 (zion1-daemon) — Phase B 완료 (2026-05-25)
+- ~~`signer/signer.go` — abi.Arguments.Pack(...) 실제 ABI 인코딩~~ ✅ 4 함수 (PoP/Bridge/Honor/Day)
+- ~~`evmclient/client.go` — chain ID 서명 + 컨트랙트 호출~~ ✅ minimal embedded ABI, 4 Broadcast* + WatchRagequit (FilterLogs)
+- ~~`zionclient/client.go` — EventDataTx → abci.Event[] 디코딩~~ ✅ DecodeResultEvent (multi-event/tx)
+- ~~핸들러: bridge_mint, attest_honor, attest_day, evm_ragequit~~ ✅ 4종 + 공통 attribute helper
+- ~~영구 store BoltDB~~ ✅ bbolt 1.3.6, 재시작 후 consumed 보존
+- ~~Vault 키 통합~~ ✅ Vault KV v2 fetch (TokenEnv 인증)
+- ~~메트릭 (Prometheus)~~ ✅ /metrics + /health endpoint, Counters/Histograms
+- ~~단위 테스트~~ ✅ 21 functions (signer 7, handlers 9, store 2, zionclient 3)
+
+### 데몬 Phase 2 (남은 작업)
+- Zion 측 cosmos-sdk client → MsgUnlockCapitalForSeum broadcast (evm_ragequit broadcaster 현재 nil)
+- Vault Transit (key 자체가 Vault 안 — 매 sign HTTP call, 더 강한 보안)
+- Solidity 측 fixture와 signer digest 교차 검증 통합 테스트
+- 멀티 인스턴스 + leader election (단일 실패점 해소)
 
 ### CW 컨트랙트
 - ~~단위 테스트 (Solidity 31개 미러)~~ ✅ 31통과 (2026-05-25)

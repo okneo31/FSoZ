@@ -60,9 +60,32 @@ func (d *Dispatcher) Dispatch(ctx context.Context, ev zionclient.TypedEvent) err
 }
 
 // HandlerContext는 모든 핸들러가 공유하는 의존성 묶음.
+// Signer는 interface — Phase 1.5에서 LocalSigner ↔ VaultSigner 교체 가능.
 type HandlerContext struct {
-	Signer    *signer.Signer
-	EVMClient *evmclient.Client
-	Store     store.Store
+	Signer              signer.DigestSigner
+	EVMClient           *evmclient.Client
+	Store               store.Store
 	SignatureTTLSeconds int64
+	Metrics             Metrics // optional — nil이면 no-op
+}
+
+// Metrics는 핸들러가 호출하는 메트릭 인터페이스. nil-safe로 설계.
+// 실제 구현은 internal/metrics 패키지에서.
+type Metrics interface {
+	IncEventProcessed(handler, status string)
+	ObserveSigningDuration(handler string, seconds float64)
+}
+
+// noopMetrics는 Metrics가 nil일 때 사용 — 코드 분기 없음.
+type noopMetrics struct{}
+
+func (noopMetrics) IncEventProcessed(string, string)         {}
+func (noopMetrics) ObserveSigningDuration(string, float64)   {}
+
+// MetricsOrNoop는 Metrics가 nil이면 noop 반환 — handler 코드는 nil 체크 불필요.
+func MetricsOrNoop(m Metrics) Metrics {
+	if m == nil {
+		return noopMetrics{}
+	}
+	return m
 }
