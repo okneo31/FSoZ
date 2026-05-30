@@ -215,8 +215,12 @@ ls -lh D:\FSoZ\artifacts\contracts\SeumStandard.sol\SeumStandard.json
 ### 데몬 Phase 2 (남은 작업)
 - Zion 측 cosmos-sdk client → MsgUnlockCapitalForSeum broadcast (evm_ragequit broadcaster 현재 nil)
 - Vault Transit (key 자체가 Vault 안 — 매 sign HTTP call, 더 강한 보안)
-- Solidity 측 fixture와 signer digest 교차 검증 통합 테스트
+- ~~Solidity 측 fixture와 signer digest 교차 검증~~ ✅ **Slice E 완료 (2026-05-31)** — Go ↔ ethers.js 4 vector 비트 동일
 - 멀티 인스턴스 + leader election (단일 실패점 해소)
+
+### Slice E — Cross-check 결과 (2026-05-31)
+`tools/print-digests.js` (ethers.js) → 4 함수 expected digest 출력 → Go 테스트에 hardcode → `cargo test`... 아니 `go test` 통과.
+이로써 **Go signer의 EIP-191 서명을 Solidity ecrecover가 `attester` 로 검증할 것이 수학적으로 보장됨**. ABI 인코딩·keccak256·EIP-191 prefix 전체 경로 일치.
 
 ### CW 컨트랙트
 - ~~단위 테스트 (Solidity 31개 미러)~~ ✅ 31통과 (2026-05-25)

@@ -175,3 +175,95 @@ func TestPackAttestPoPDigest_KnownVector(t *testing.T) {
 	// 향후 cross-check로 hardcode 가능.
 	_ = hex.EncodeToString(d)
 }
+
+// ─── Cross-check: ethers.js와 비트 동일 ───
+// 입력·기대 digest는 tools/print-digests.js 가 ethers.AbiCoder + ethers.keccak256으로 생성.
+// 이 4개 vector가 통과해야 Go signer가 Solidity ecrecover와 호환된다고 보증.
+
+const (
+	fixContract    = "0x1111111111111111111111111111111111111111"
+	fixWorker      = "0x2222222222222222222222222222222222222222"
+	fixExpiry      = uint64(1_700_000_000)
+	fixNoncePopHex = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	fixLockIDHex   = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+	fixJobIDHex    = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+	fixNonceDayHex = "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+
+	fixKWRAmount   = 12345
+	fixAxisLabor   = 1
+	fixHonorDelta  = 5000
+	fixDay         = uint64(18000)
+
+	// 기대 출력 (ethers.js, 2026-05-25 검증):
+	expectedPoP    = "32a2040be71fbf664278d7190129661e36da7c624c84abb52f642cc04b252ddc"
+	expectedBridge = "ca1f91f220dd44436b2896638e535b2321ff96615f8226437ae718b3f26eb67e"
+	expectedHonor  = "57846eb692bf6949f27196a86a1762ad0e6619173c11361382cc48946b97590a"
+	expectedDay    = "88fced36e3d9c90e18a7ada5560d060c35987303077aa672a236bc097f1be6f7"
+)
+
+func hexBytes32(t *testing.T, h string) [32]byte {
+	t.Helper()
+	b, err := hex.DecodeString(h)
+	if err != nil {
+		t.Fatalf("hex decode %s: %v", h, err)
+	}
+	if len(b) != 32 {
+		t.Fatalf("hex len %d != 32", len(b))
+	}
+	var out [32]byte
+	copy(out[:], b)
+	return out
+}
+
+func assertDigest(t *testing.T, label string, got []byte, expectedHex string) {
+	t.Helper()
+	gotHex := hex.EncodeToString(got)
+	if gotHex != expectedHex {
+		t.Fatalf("%s digest mismatch\n  got:      %s\n  expected: %s\n  (입력 변경 시 tools/print-digests.js 재실행)",
+			label, gotHex, expectedHex)
+	}
+}
+
+func TestCrossCheck_AttestPoP_ethersJS(t *testing.T) {
+	contract := common.HexToAddress(fixContract)
+	worker := common.HexToAddress(fixWorker)
+	nonce := hexBytes32(t, fixNoncePopHex)
+	got, err := PackAttestPoPDigest(contract, worker, fixExpiry, nonce)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertDigest(t, "ATTEST_POP", got, expectedPoP)
+}
+
+func TestCrossCheck_BridgeMintCapital_ethersJS(t *testing.T) {
+	contract := common.HexToAddress(fixContract)
+	worker := common.HexToAddress(fixWorker)
+	lockID := hexBytes32(t, fixLockIDHex)
+	got, err := PackBridgeMintCapitalDigest(contract, worker, big.NewInt(fixKWRAmount), lockID, fixExpiry)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertDigest(t, "BRIDGE_MINT_CAPITAL", got, expectedBridge)
+}
+
+func TestCrossCheck_AttestHonor_ethersJS(t *testing.T) {
+	contract := common.HexToAddress(fixContract)
+	worker := common.HexToAddress(fixWorker)
+	jobID := hexBytes32(t, fixJobIDHex)
+	got, err := PackAttestHonorDigest(contract, worker, fixAxisLabor, big.NewInt(fixHonorDelta), jobID, fixExpiry)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertDigest(t, "ATTEST_HONOR", got, expectedHonor)
+}
+
+func TestCrossCheck_AttestDay_ethersJS(t *testing.T) {
+	contract := common.HexToAddress(fixContract)
+	worker := common.HexToAddress(fixWorker)
+	nonce := hexBytes32(t, fixNonceDayHex)
+	got, err := PackAttestDayDigest(contract, worker, fixDay, true, false, fixExpiry, nonce)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertDigest(t, "ATTEST_DAY", got, expectedDay)
+}
