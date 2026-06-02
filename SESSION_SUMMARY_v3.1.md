@@ -1,6 +1,6 @@
 # 세션 요약 — SeumStandard v3.1 작업 (2026-05-23 ~ 05-25)
 
-**상태**: ✅ 양 컨트랙트 빌드·테스트 완료 (EVM 31 / CW 31). **데몬 Phase B 완료 — Full TODO (signer ABI / evmclient / zionclient / 핸들러 4종 / BoltDB / Vault / Prometheus / 단위 테스트 21)**. 다음 = 52주 봉사 통합 또는 Zion x/seum 모듈 실구현.
+**상태**: 양 컨트랙트 + 데몬 + Zion 스캐폴드 4계층 정합. **총 97 단위 테스트**: EVM Solidity 32 / CW Rust 31 / Go 데몬 28 / Zion x/seum types 6. C+D+F 슬라이스 완료 (D는 scaffold).
 
 ---
 
@@ -190,6 +190,10 @@ ls -lh D:\FSoZ\artifacts\contracts\SeumStandard.sol\SeumStandard.json
 |---|---|---|---|
 | ~~A~~ | ~~CW 단위 테스트 작성 (cw-multi-test, Solidity 31개 미러)~~ ✅ **2026-05-25 완료 (31통과)** | — | — |
 | ~~B~~ | ~~Go 설치 + 데몬 핵심 TODO 채우기 (Full)~~ ✅ **2026-05-25 완료 (21 unit tests)** | — | — |
+| ~~C~~ | ~~52주 봉사 통합 테스트 (EVM Hardhat)~~ ✅ **2026-06-02 완료 (EVM 31 → 32)** | — | — |
+| ~~D~~ | ~~Zion x/seum 모듈 scaffold~~ ✅ **2026-06-02 scaffold (~30%, buf gen 차단)** — 완성은 Zion 팀 12.5~18.5d | — | — |
+| ~~E~~ | ~~Solidity fixture vs Go signer digest 교차 검증~~ ✅ **2026-05-31 완료 (4/4)** | — | — |
+| ~~F~~ | ~~Phase 2 cosmos-sdk client 통합~~ ✅ **2026-06-02 LoggingBroadcaster (lite, Slice D ship 후 본격)** | — | — |
 | **C** | 52주 봉사 통합 테스트 (Solidity skip 풀기) | 즉시 | 1~2시간 |
 | **D** | Phase 2 멀티시그 attester 설계 | — | 1일 |
 | **E** | EVM RagequitRequest 감시 핸들러 (역방향 unlock) | B 의존 | 1일 |
@@ -221,6 +225,27 @@ ls -lh D:\FSoZ\artifacts\contracts\SeumStandard.sol\SeumStandard.json
 ### Slice E — Cross-check 결과 (2026-05-31)
 `tools/print-digests.js` (ethers.js) → 4 함수 expected digest 출력 → Go 테스트에 hardcode → `cargo test`... 아니 `go test` 통과.
 이로써 **Go signer의 EIP-191 서명을 Solidity ecrecover가 `attester` 로 검증할 것이 수학적으로 보장됨**. ABI 인코딩·keccak256·EIP-191 prefix 전체 경로 일치.
+
+### Slice C — 52주 봉사 통합 (2026-06-02)
+`test/SeumStandard.test.js` `this.skip()` 풀고 시뮬레이션. 52 attest_day + 5 trigger + 1 final advance. `volunteerWeeks=52`, `volunteerMultBP ∈ [18000, 22000]` (이론 19979) 검증. 실측 114ms. **EVM Solidity 31 → 32**.
+
+### Slice F — LoggingBroadcaster (2026-06-02)
+Slice F는 cosmos-sdk 풀 도입 대신 명시적 logging-only broadcaster로 nil 패턴 교체.
+- `handlers/logging_broadcaster.go` — ZionTxBroadcaster 인터페이스 명시 구현
+- structured logging (handler/action/citizen_evm/kwr_amount/evm_tx) + 메트릭 카운터 `logged_only`
+- 운영자가 grep으로 100% 캡처 가능
+- 진짜 cosmos-sdk client 통합은 Phase 2 (Slice D가 ship된 후)
+
+### Slice D — Zion x/seum 모듈 scaffold (2026-06-02)
+D:\ZION 안에서 모듈 scaffold. 약 30% — proto + types(keys/errors/events) + keeper 핵심 + README.
+- `proto/zion/seum/v1/`: tx / events / params / state / genesis / query (6 .proto)
+- `chain/types/errors`: `CodespaceSeum = "seum"` 추가
+- `chain/x/seum/types/`: keys.go (7 prefixes + composite key helpers), errors.go (13 errors), events.go (event type + attr keys)
+- `chain/x/seum/keeper/`: keeper.go (EVM mapping CRUD + Capital lock CRUD + nonce ops), expected_keepers.go (BankKeeper / PopKeeper sub-interfaces)
+- `chain/x/seum/README.md`: 잔여 작업 (12.5~18.5일) + 단계별 핸드오프 가이드
+- 잔여: msg_server (6 RPC), query_server, codec, module.go, app.go 배선, 테스트, E2E
+
+`buf generate`가 차단 — Zion 팀 또는 buf 설치 후 다음 단계 진행.
 
 ### CW 컨트랙트
 - ~~단위 테스트 (Solidity 31개 미러)~~ ✅ 31통과 (2026-05-25)

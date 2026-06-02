@@ -164,7 +164,10 @@ func main() {
 	// ─── EVM Ragequit 감시 (역방향) ───
 	if cfg.Handlers.EVMRagequit {
 		ragequitCh := make(chan evmclient.RagequitEvent, 16)
-		rqHandler := handlers.NewEVMRagequitHandler(st, nil /* TODO: Zion broadcaster */, metricsForHandlers)
+		// Phase 1.5: logging-only broadcaster (cosmos-sdk client 통합은 Phase 2).
+		// 명시적 타입으로 "의도적 stub" 임을 표시.
+		zionBroadcaster := handlers.NewLoggingBroadcaster(logger, metricsForHandlers)
+		rqHandler := handlers.NewEVMRagequitHandler(st, zionBroadcaster, metricsForHandlers)
 		go func() {
 			if err := evm.WatchRagequit(ctx, nil /* fromBlock: head */, ragequitCh); err != nil && err != context.Canceled {
 				logger.Error("ragequit watch error", "error", err.Error())
