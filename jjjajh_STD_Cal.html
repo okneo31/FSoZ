@@ -3,13 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>안재현 스탠더드 시뮬 v4</title>
+    <title>안재현 스탠더드 시뮬 v4.2 — 모바일·글씨 토글</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>tailwind.config = { darkMode: 'class' };</script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-        html { font-size: 200%; }
+
+        /* 글씨 크기 토글 — 기본 작게(200%, 현재 동작) / 크게(265%) */
+        :root { --font-scale: 200; }
+        html { font-size: calc(var(--font-scale) * 1%); }
+
+        /* 모바일은 데스크탑보다 한 단 줄여 시작 (가독성 vs 화면 면적 균형) */
+        @media (max-width: 640px) {
+            :root { --font-scale-mobile-shrink: 0.7; }
+            html { font-size: calc(var(--font-scale) * 1% * var(--font-scale-mobile-shrink, 1)); }
+            /* 터치 타깃 최소 44px 확보 — 버튼/입력 */
+            button, select, input[type="number"], input[type="checkbox"] { min-height: 44px; }
+            input[type="checkbox"] { min-width: 24px; }
+            /* 차트 컨테이너 모바일 높이 살짝 줄임 */
+            .chart-mobile-tight { min-height: 14rem !important; }
+        }
+
         .text-xs { font-size: 1.125rem !important; }
         body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         ::-webkit-scrollbar { width: 14px; }
@@ -19,9 +34,16 @@
         .dark ::-webkit-scrollbar-thumb { background: #4b5563; }
         .tab-btn.active { background-color: #2563EB; color: white; }
         .dark .tab-btn.active { background-color: #60A5FA; color: #111827; }
+
+        /* 모바일 탭 가로 스크롤 — wrap 대신 스와이프 */
+        @media (max-width: 640px) {
+            .tab-scroll { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+            .tab-scroll::-webkit-scrollbar { height: 6px; }
+            .tab-scroll > button { flex-shrink: 0; }
+        }
     </style>
 </head>
-<body class="bg-sky-200 dark:bg-gray-900 text-slate-900 dark:text-gray-100 min-h-screen p-6 md:p-12 transition-colors">
+<body class="bg-sky-200 dark:bg-gray-900 text-slate-900 dark:text-gray-100 min-h-screen p-3 sm:p-6 md:p-12 transition-colors">
 
     <!-- Tailwind JIT safelist (동적 클래스 보장) -->
     <div class="hidden
@@ -43,15 +65,15 @@
         <!-- Header -->
         <header class="border-b border-sky-300 dark:border-gray-700 pb-6 flex items-center justify-between flex-wrap gap-4">
             <div>
-                <h1 class="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                    안재현 스탠더드 시뮬 <span class="text-blue-600 dark:text-blue-400">v4.1</span>
+                <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                    안재현 스탠더드 시뮬 <span class="text-blue-600 dark:text-blue-400">v4.2</span>
                 </h1>
                 <p class="text-slate-600 dark:text-gray-400 mt-2 text-sm">
                     3축 명예 (kWR 기반) · 가속 감쇠 · 행동 게이트 · 안식일 · 봉사 복리+자본보너스 — <em>컨트랙트 v3.1 (jjjajh_STD_SC.sol)와 비트 동일</em>
                 </p>
             </div>
-            <div class="flex items-center gap-3 flex-wrap">
-                <select id="scenarioPreset" class="bg-white dark:bg-gray-800 border-2 border-sky-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm font-semibold text-slate-900 dark:text-gray-100">
+            <div class="flex items-center gap-2 sm:gap-3 flex-wrap w-full sm:w-auto">
+                <select id="scenarioPreset" class="bg-white dark:bg-gray-800 border-2 border-sky-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm font-semibold text-slate-900 dark:text-gray-100 flex-1 sm:flex-initial min-w-0">
                     <option value="">시나리오 선택…</option>
                     <option value="capitalist">자본가 (방관) — C만, 활동 0%</option>
                     <option value="worker">노동자 — L 中, 활동 85%</option>
@@ -60,15 +82,18 @@
                     <option value="elder">원로 (10년차) — 모든 축 + 520주 봉사</option>
                     <option value="bot">봇 (23h 패턴) — 자본만, 활동 0% (감쇠 무방비)</option>
                 </select>
-                <button id="csvExport" class="px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border-2 border-sky-300 dark:border-gray-600 font-semibold text-sm hover:bg-sky-100 dark:hover:bg-gray-700">📥 CSV</button>
-                <button id="themeToggle" class="px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border-2 border-sky-300 dark:border-gray-600 font-semibold text-sm hover:bg-sky-100 dark:hover:bg-gray-700">
+                <button id="fontToggle" class="px-3 sm:px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border-2 border-sky-300 dark:border-gray-600 font-semibold text-sm hover:bg-sky-100 dark:hover:bg-gray-700" title="글씨 크기 토글">
+                    <span id="fontLabel">Aa 크게</span>
+                </button>
+                <button id="csvExport" class="px-3 sm:px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border-2 border-sky-300 dark:border-gray-600 font-semibold text-sm hover:bg-sky-100 dark:hover:bg-gray-700">📥 CSV</button>
+                <button id="themeToggle" class="px-3 sm:px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border-2 border-sky-300 dark:border-gray-600 font-semibold text-sm hover:bg-sky-100 dark:hover:bg-gray-700">
                     <span id="themeLabel">◑ 다크</span>
                 </button>
             </div>
         </header>
 
-        <!-- Tabs -->
-        <div class="flex flex-wrap gap-2 border-b border-sky-300 dark:border-gray-700 pb-3">
+        <!-- Tabs (모바일: 가로 스와이프) -->
+        <div class="tab-scroll flex flex-wrap gap-2 border-b border-sky-300 dark:border-gray-700 pb-3">
             <button data-tab="citizen"  class="tab-btn active px-4 py-2 rounded-lg text-sm font-semibold bg-white dark:bg-gray-800 border-2 border-sky-300 dark:border-gray-600">① 시민</button>
             <button data-tab="lifespan" class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold bg-white dark:bg-gray-800 border-2 border-sky-300 dark:border-gray-600">② 수명·감쇠</button>
             <button data-tab="volunteer" class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold bg-white dark:bg-gray-800 border-2 border-sky-300 dark:border-gray-600">③ 봉사 30년</button>
@@ -865,7 +890,7 @@
         });
 
         // ════════════════════════════════════════════════════════════
-        // 테마 + 이벤트 바인딩
+        // 테마 + 글씨크기 + 이벤트 바인딩
         // ════════════════════════════════════════════════════════════
         function setTheme(mode) {
             if (mode === 'dark') { htmlEl.classList.add('dark'); $('themeLabel').textContent = '◐ 라이트'; }
@@ -874,6 +899,19 @@
             updateAll();
         }
         $('themeToggle').addEventListener('click', () => setTheme(htmlEl.classList.contains('dark') ? 'light' : 'dark'));
+
+        // 글씨 크기 토글: 'small'(200% — 현재 동작) ↔ 'large'(265%)
+        // 모바일에서는 CSS에서 자동으로 0.7배 축소되어 적용.
+        function setFontMode(mode) {
+            const scale = (mode === 'large') ? 265 : 200;
+            document.documentElement.style.setProperty('--font-scale', String(scale));
+            $('fontLabel').textContent = (mode === 'large') ? 'Aa 작게' : 'Aa 크게';
+            try { localStorage.setItem('seum-font', mode); } catch (e) {}
+        }
+        $('fontToggle').addEventListener('click', () => {
+            const cur = (localStorage.getItem('seum-font') === 'large') ? 'large' : 'small';
+            setFontMode(cur === 'small' ? 'large' : 'small');
+        });
 
         $('scenarioPreset').addEventListener('change', (e) => { if (e.target.value) applyScenario(e.target.value); });
 
@@ -884,8 +922,10 @@
             if (el && el.type === 'checkbox') el.addEventListener('change', updateAll);
         });
 
-        const saved = (() => { try { return localStorage.getItem('seum-theme'); } catch (e) { return null; } })();
-        setTheme(saved || 'light');
+        const savedTheme = (() => { try { return localStorage.getItem('seum-theme'); } catch (e) { return null; } })();
+        setTheme(savedTheme || 'light');
+        const savedFont = (() => { try { return localStorage.getItem('seum-font'); } catch (e) { return null; } })();
+        setFontMode(savedFont || 'small');  // 기본 = 작게 (현재 동작)
     </script>
 </body>
 </html>
