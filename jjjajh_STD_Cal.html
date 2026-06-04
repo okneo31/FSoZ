@@ -3,27 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>안재현 스탠더드 시뮬 v4.2 — 모바일·글씨 토글</title>
+    <title>안재현 스탠더드 시뮬 v4.3 — 모바일 최적화</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>tailwind.config = { darkMode: 'class' };</script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
 
-        /* 글씨 크기 토글 — 기본 작게(200%, 현재 동작) / 크게(265%) */
-        :root { --font-scale: 200; }
-        html { font-size: calc(var(--font-scale) * 1%); }
-
-        /* 모바일은 데스크탑보다 한 단 줄여 시작 (가독성 vs 화면 면적 균형) */
+        /* ── 글씨 크기 토글 ──
+           데스크탑과 모바일을 *완전 별개* 변수로 관리.
+           작게(기본): desktop 200% (현재) · mobile 100% (정상 16px)
+           크게:       desktop 260% · mobile 118%                       */
+        :root { --font-desktop: 200%; --font-mobile: 100%; }
+        html { font-size: var(--font-desktop); }
         @media (max-width: 640px) {
-            :root { --font-scale-mobile-shrink: 0.7; }
-            html { font-size: calc(var(--font-scale) * 1% * var(--font-scale-mobile-shrink, 1)); }
-            /* 터치 타깃 최소 44px 확보 — 버튼/입력 */
-            button, select, input[type="number"], input[type="checkbox"] { min-height: 44px; }
-            input[type="checkbox"] { min-width: 24px; }
-            /* 차트 컨테이너 모바일 높이 살짝 줄임 */
-            .chart-mobile-tight { min-height: 14rem !important; }
+            html { font-size: var(--font-mobile); }
+            /* 모바일에서 .text-xs override 무효화 — Tailwind 기본 12px 복귀 */
+            .text-xs { font-size: 0.75rem !important; }
+            /* 터치 타깃 (Apple HIG = 44pt) */
+            button, select { min-height: 44px; }
         }
+
+        /* overflow 방지 */
+        html, body { max-width: 100%; overflow-x: hidden; }
 
         .text-xs { font-size: 1.125rem !important; }
         body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
@@ -35,11 +37,21 @@
         .tab-btn.active { background-color: #2563EB; color: white; }
         .dark .tab-btn.active { background-color: #60A5FA; color: #111827; }
 
-        /* 모바일 탭 가로 스크롤 — wrap 대신 스와이프 */
+        /* 모바일 탭 가로 스와이프 */
         @media (max-width: 640px) {
             .tab-scroll { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
             .tab-scroll::-webkit-scrollbar { height: 6px; }
             .tab-scroll > button { flex-shrink: 0; }
+        }
+
+        /* 차트 컨테이너 높이 — 데스크탑 풍성 / 모바일 컴팩트 */
+        .chart-host { position: relative; min-height: 28rem; }
+        .chart-host-md { position: relative; min-height: 22rem; }
+        .chart-host-sm { position: relative; min-height: 18rem; }
+        @media (max-width: 640px) {
+            .chart-host { min-height: 18rem; }
+            .chart-host-md { min-height: 16rem; }
+            .chart-host-sm { min-height: 14rem; }
         }
     </style>
 </head>
@@ -60,13 +72,13 @@
         text-blue-700 text-emerald-700 text-amber-700 text-red-700 text-purple-700
         dark:text-blue-400 dark:text-emerald-400 dark:text-amber-400 dark:text-red-400 dark:text-purple-400"></div>
 
-    <div class="max-w-7xl mx-auto space-y-6">
+    <div class="max-w-7xl mx-auto space-y-4 sm:space-y-6">
 
         <!-- Header -->
-        <header class="border-b border-sky-300 dark:border-gray-700 pb-6 flex items-center justify-between flex-wrap gap-4">
+        <header class="border-b border-sky-300 dark:border-gray-700 pb-4 sm:pb-6 flex items-center justify-between flex-wrap gap-3 sm:gap-4">
             <div>
                 <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                    안재현 스탠더드 시뮬 <span class="text-blue-600 dark:text-blue-400">v4.2</span>
+                    안재현 스탠더드 시뮬 <span class="text-blue-600 dark:text-blue-400">v4.3</span>
                 </h1>
                 <p class="text-slate-600 dark:text-gray-400 mt-2 text-sm">
                     3축 명예 (kWR 기반) · 가속 감쇠 · 행동 게이트 · 안식일 · 봉사 복리+자본보너스 — <em>컨트랙트 v3.1 (jjjajh_STD_SC.sol)와 비트 동일</em>
@@ -107,7 +119,7 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                 <!-- Controls -->
-                <div class="lg:col-span-1 space-y-5 bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
+                <div class="lg:col-span-1 space-y-4 sm:space-y-5 bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
                     <h2 class="font-bold text-lg text-slate-900 dark:text-white">시민 입력</h2>
 
                     <div>
@@ -164,39 +176,39 @@
                 <div class="lg:col-span-2 space-y-4">
 
                     <!-- Result Cards -->
-                    <div class="grid grid-cols-3 gap-3">
-                        <div class="bg-white dark:bg-gray-800 p-4 rounded-xl border-2 border-blue-400 dark:border-blue-500 shadow text-center">
+                    <div class="grid grid-cols-3 gap-2 sm:gap-3">
+                        <div class="bg-white dark:bg-gray-800 p-2 sm:p-4 rounded-xl border-2 border-blue-400 dark:border-blue-500 shadow text-center">
                             <div class="text-xs uppercase tracking-wider text-slate-500 dark:text-gray-400">자본 C (kWR)</div>
-                            <div id="resC" class="text-2xl font-extrabold text-blue-600 dark:text-blue-400 mt-1">0</div>
+                            <div id="resC" class="text-lg sm:text-2xl font-extrabold text-blue-600 dark:text-blue-400 mt-1">0</div>
                             <div id="resCpct" class="text-xs text-slate-500 dark:text-gray-500 mt-1">— %</div>
                         </div>
-                        <div class="bg-white dark:bg-gray-800 p-4 rounded-xl border-2 border-emerald-400 dark:border-emerald-500 shadow text-center">
+                        <div class="bg-white dark:bg-gray-800 p-2 sm:p-4 rounded-xl border-2 border-emerald-400 dark:border-emerald-500 shadow text-center">
                             <div class="text-xs uppercase tracking-wider text-slate-500 dark:text-gray-400">노동 L</div>
-                            <div id="resL" class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">0</div>
+                            <div id="resL" class="text-lg sm:text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">0</div>
                             <div id="resLpct" class="text-xs text-slate-500 dark:text-gray-500 mt-1">— %</div>
                         </div>
-                        <div class="bg-white dark:bg-gray-800 p-4 rounded-xl border-2 border-purple-400 dark:border-purple-500 shadow text-center">
+                        <div class="bg-white dark:bg-gray-800 p-2 sm:p-4 rounded-xl border-2 border-purple-400 dark:border-purple-500 shadow text-center">
                             <div class="text-xs uppercase tracking-wider text-slate-500 dark:text-gray-400">검증 V</div>
-                            <div id="resV" class="text-2xl font-extrabold text-purple-600 dark:text-purple-400 mt-1">0</div>
+                            <div id="resV" class="text-lg sm:text-2xl font-extrabold text-purple-600 dark:text-purple-400 mt-1">0</div>
                             <div id="resVpct" class="text-xs text-slate-500 dark:text-gray-500 mt-1">— %</div>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-3 gap-3">
-                        <div class="bg-white dark:bg-gray-800 p-4 rounded-xl border-2 border-amber-400 dark:border-amber-500 shadow text-center">
+                    <div class="grid grid-cols-3 gap-2 sm:gap-3">
+                        <div class="bg-white dark:bg-gray-800 p-2 sm:p-4 rounded-xl border-2 border-amber-400 dark:border-amber-500 shadow text-center">
                             <div class="text-xs uppercase tracking-wider text-slate-500 dark:text-gray-400">봉사 multBP</div>
-                            <div id="resMult" class="text-xl font-extrabold text-amber-600 dark:text-amber-400 mt-1">10000</div>
+                            <div id="resMult" class="text-base sm:text-xl font-extrabold text-amber-600 dark:text-amber-400 mt-1">10000</div>
                             <div id="resMultX" class="text-xs text-slate-500 dark:text-gray-500 mt-1">1.00×</div>
                         </div>
-                        <div class="bg-white dark:bg-gray-800 p-4 rounded-xl border-2 border-slate-400 dark:border-slate-500 shadow text-center col-span-2">
+                        <div class="bg-white dark:bg-gray-800 p-2 sm:p-4 rounded-xl border-2 border-slate-400 dark:border-slate-500 shadow text-center col-span-2">
                             <div class="text-xs uppercase tracking-wider text-slate-500 dark:text-gray-400">의결권 (VP)</div>
-                            <div id="resVP" class="text-3xl font-extrabold text-slate-900 dark:text-white mt-1">0</div>
+                            <div id="resVP" class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">0</div>
                             <div id="resVPformula" class="text-xs text-slate-500 dark:text-gray-500 mt-1 font-mono">(√C + 5√L + 5√V) × √(mult/BP)</div>
                         </div>
                     </div>
 
                     <!-- Trajectory Chart -->
-                    <div class="bg-white dark:bg-gray-800 p-5 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md relative" style="min-height: 28rem;">
+                    <div class="bg-white dark:bg-gray-800 p-3 sm:p-5 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md relative chart-host">
                         <canvas id="trajChart"></canvas>
                     </div>
                 </div>
@@ -209,7 +221,7 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                 <!-- D-day card -->
-                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
+                <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
                     <h2 class="font-bold text-lg text-slate-900 dark:text-white mb-4">F1 — 수명 예측 (D-day)</h2>
                     <p class="text-sm text-slate-600 dark:text-gray-400 mb-4">현재 입력 기준, 3축 명예가 모두 0이 되는 추정일.</p>
                     <div class="text-center py-8 bg-sky-50 dark:bg-gray-900 rounded-lg">
@@ -223,17 +235,17 @@
                 </div>
 
                 <!-- Decay rate curve -->
-                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
+                <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
                     <h2 class="font-bold text-lg text-slate-900 dark:text-white mb-4">F2 — 감쇠율 곡선 rate(n) = 1% × 1.01ⁿ</h2>
                     <p class="text-sm text-slate-600 dark:text-gray-400 mb-4">가입일로부터 n일째 감쇠율. 462일 cap 도달.</p>
-                    <div class="relative" style="min-height: 18rem;">
+                    <div class="chart-host-sm">
                         <canvas id="rateChart"></canvas>
                     </div>
                 </div>
             </div>
 
             <!-- Lifeline scenarios table -->
-            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
+            <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
                 <h2 class="font-bold text-lg text-slate-900 dark:text-white mb-4">활동률별 수명 표</h2>
                 <p class="text-sm text-slate-600 dark:text-gray-400 mb-4">초기 명예 C=L=V=10000, 안식일 offset=6 고정. 같은 활동률로 매일 살았을 때 D-day.</p>
                 <div class="overflow-x-auto">
@@ -255,12 +267,12 @@
         <!-- ─── TAB 3: 봉사 30년 (F4) ─── -->
         <section data-section="volunteer" class="space-y-6 hidden">
 
-            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
+            <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
                 <h2 class="font-bold text-lg text-slate-900 dark:text-white mb-2">F4 — 봉사 누적 30년 프로젝션</h2>
                 <p class="text-sm text-slate-600 dark:text-gray-400 mb-4">
                     매주 ≥2h 봉사 시: (a) 명예 multBP × 1.01342 복리 (52주=2×), (b) <strong>자본 += max(100 kWR, C × 1%)</strong> (v3.1 NEW). 30년 = 1560주. VP factor = √(multBP/BP).
                 </p>
-                <div class="relative" style="min-height: 26rem;">
+                <div class="chart-host">
                     <canvas id="volChart"></canvas>
                 </div>
                 <div class="mt-4 grid grid-cols-2 md:grid-cols-5 gap-3 text-center" id="volMilestones"></div>
@@ -271,7 +283,7 @@
         <section data-section="compare" class="space-y-6 hidden">
 
             <!-- F3: 두 시민 비교 -->
-            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
+            <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
                 <h2 class="font-bold text-lg text-slate-900 dark:text-white mb-3">F3 — 두 시민 head-to-head</h2>
                 <p class="text-sm text-slate-600 dark:text-gray-400 mb-4">같은 일수 동안 두 시민의 VP 시계열을 비교.</p>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -296,25 +308,25 @@
                         <label class="flex items-center gap-2 text-xs"><input type="checkbox" id="bVol" checked> 매주 봉사</label>
                     </div>
                 </div>
-                <div class="relative" style="min-height: 24rem;">
+                <div class="chart-host-md">
                     <canvas id="vsChart"></canvas>
                 </div>
             </div>
 
             <!-- Cartel (3-axis updated) -->
-            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
+            <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
                 <h2 class="font-bold text-lg text-slate-900 dark:text-white mb-2">카르텔 비교 (3축 + 봉사)</h2>
                 <p class="text-sm text-slate-600 dark:text-gray-400 mb-4">
                     같은 입력에서 <span class="text-blue-600 dark:text-blue-300">1× / 10× / 100× / 1000×</span> 초기 명예. <strong class="text-emerald-600 dark:text-emerald-400">10× 입력 ≈ √10 ≈ 3.16× 권력.</strong> 자본 집중이 비효율적.
                 </p>
-                <div class="relative" style="min-height: 22rem;">
+                <div class="chart-host-md">
                     <canvas id="cartelChart"></canvas>
                 </div>
                 <div id="cartelInsight" class="mt-5 grid grid-cols-2 md:grid-cols-4 gap-3 text-center"></div>
             </div>
 
             <!-- F6: 직업 아키타입 -->
-            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
+            <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
                 <h2 class="font-bold text-lg text-slate-900 dark:text-white mb-2">F6 — 직업 아키타입 비교</h2>
                 <p class="text-sm text-slate-600 dark:text-gray-400 mb-4">같은 자원(총 30000 명예 + 동일 활동률 85% + 매주 봉사) 1년 후 VP. <em>최적 전략은 분산.</em></p>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="archetypeCards"></div>
@@ -323,7 +335,7 @@
 
         <!-- ─── TAB 5: 검증 (F7) ─── -->
         <section data-section="verify" class="space-y-6 hidden">
-            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
+            <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl border border-sky-300 dark:border-gray-700 shadow-md">
                 <h2 class="font-bold text-lg text-slate-900 dark:text-white mb-2">F7 — 컨트랙트 비트 동일성 검증</h2>
                 <p class="text-sm text-slate-600 dark:text-gray-400 mb-4">
                     현재 입력에 대한 시뮬레이터 엔진 출력. 이 값들은 <code>jjjajh_STD_SC.sol</code> 의 동일 호출 결과와 *비트 단위 동일* 해야 함.
@@ -900,12 +912,15 @@
         }
         $('themeToggle').addEventListener('click', () => setTheme(htmlEl.classList.contains('dark') ? 'light' : 'dark'));
 
-        // 글씨 크기 토글: 'small'(200% — 현재 동작) ↔ 'large'(265%)
-        // 모바일에서는 CSS에서 자동으로 0.7배 축소되어 적용.
+        // 글씨 크기 토글:
+        //   'small'(기본): desktop 200% (현재 동작) · mobile 100% (정상)
+        //   'large':       desktop 260% · mobile 125%
+        // 데스크탑과 모바일을 따로 — 모바일에서 200%면 414px 화면이 깨짐.
         function setFontMode(mode) {
-            const scale = (mode === 'large') ? 265 : 200;
-            document.documentElement.style.setProperty('--font-scale', String(scale));
-            $('fontLabel').textContent = (mode === 'large') ? 'Aa 작게' : 'Aa 크게';
+            const isLarge = mode === 'large';
+            document.documentElement.style.setProperty('--font-desktop', isLarge ? '260%' : '200%');
+            document.documentElement.style.setProperty('--font-mobile', isLarge ? '118%' : '100%');
+            $('fontLabel').textContent = isLarge ? 'Aa 작게' : 'Aa 크게';
             try { localStorage.setItem('seum-font', mode); } catch (e) {}
         }
         $('fontToggle').addEventListener('click', () => {
