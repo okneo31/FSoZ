@@ -59,6 +59,16 @@ func (d *Dispatcher) Dispatch(ctx context.Context, ev zionclient.TypedEvent) err
 	return nil
 }
 
+// MarkPermanentlyFailed는 영구 실패한 이벤트를 store에 별도 prefix로 기록.
+// dead-letter 큐로 사용 — 재시작 시 같은 이벤트가 다시 들어와도 즉시 skip 가능.
+// pipeline.processWithRetry가 IsPermanent 에러 감지 후 호출.
+func (d *Dispatcher) MarkPermanentlyFailed(ev zionclient.TypedEvent) {
+	failedKey := "failed:" + ev.TxHash + ":" + ev.Type
+	d.store.MarkConsumed(failedKey)
+	// dispatch 측 dedup key도 mark — 같은 이벤트 재시도 안 함
+	d.store.MarkConsumed(ev.TxHash + ":" + ev.Type)
+}
+
 // HandlerContext는 모든 핸들러가 공유하는 의존성 묶음.
 // Signer는 interface — Phase 1.5에서 LocalSigner ↔ VaultSigner 교체 가능.
 type HandlerContext struct {

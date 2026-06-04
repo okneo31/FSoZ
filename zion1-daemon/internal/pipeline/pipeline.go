@@ -68,13 +68,25 @@ func (p *Pipeline) processWithRetry(ctx context.Context, ev zionclient.TypedEven
 			)
 			return
 		}
-		p.logger.Error("dispatch error",
+		// 영구 에러는 retry 무의미 — dispatcher가 이미 markConsumed 안 한 상태.
+		// 영구 표시 + dispatch에서 다시 처리하지 않도록 별도 dead-letter 메커니즘이 store에 있어야 함.
+		// 현재는 abandoned 로깅 후 종료 (영구 에러 메트릭 분리).
+		if IsPermanent(err) {
+			p.logger.Error("dispatch permanent error — abandoning event (will NOT mark consumed)",
+				"type", ev.Type,
+				"tx_hash", ev.TxHash,
+				"error", err.Error(),
+			)
+			p.dispatcher.MarkPermanentlyFailed(ev)
+			return
+		}
+		p.logger.Error("dispatch error (transient — will retry)",
 			"type", ev.Type,
 			"tx_hash", ev.TxHash,
 			"error", err.Error(),
 		)
 	}
-	p.logger.Error("event abandoned after retries",
+	p.logger.Error("event abandoned after retries (transient retries exhausted)",
 		"type", ev.Type,
 		"tx_hash", ev.TxHash,
 	)

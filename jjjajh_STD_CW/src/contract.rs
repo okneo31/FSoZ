@@ -160,7 +160,8 @@ fn exec_contribute_capital(
     apply_decay(&mut c, env.block.time.seconds(), 0, &info.sender, &deps.as_ref())?;
     c.base_honor[0] = c.base_honor[0].checked_add(coin.amount)?;
     c.locked_kwr = c.locked_kwr.checked_add(coin.amount)?;
-    process_weeks_with_storage(&mut c, &info.sender, deps.storage)?;
+    // Solidity v3.1과 비트 동일: _processWeeks(who, c.lastDecayDay[axisIdx]) — 방금 처리한 축의 last_decay_day 전달.
+    process_weeks_with_storage(&mut c, &info.sender, deps.storage, 0)?;
     CITIZENS.save(deps.storage, &info.sender, &c)?;
     Ok(Response::new()
         .add_attribute("action", "contribute_capital")
@@ -203,7 +204,8 @@ fn exec_attest_honor(
     };
     apply_decay(&mut c, env.block.time.seconds(), axis_idx, &worker_addr, &deps.as_ref())?;
     c.base_honor[axis_idx] = c.base_honor[axis_idx].checked_add(honor_delta)?;
-    process_weeks_with_storage(&mut c, &worker_addr, deps.storage)?;
+    // Solidity v3.1과 비트 동일: 방금 처리한 축의 last_decay_day 전달.
+    process_weeks_with_storage(&mut c, &worker_addr, deps.storage, axis_idx)?;
     CITIZENS.save(deps.storage, &worker_addr, &c)?;
     CONSUMED.save(deps.storage, &job_id, &true)?;
     Ok(Response::new()
@@ -446,13 +448,18 @@ fn apply_decay(
 }
 
 // ─── 주간 봉사 정산 — 자격 주마다 multBP + 자본 보너스 ───
+//
+// Solidity v3.1 `_processWeeks(who, c.lastDecayDay[axisIdx])` 와 동일 — 방금 처리한 *그 축의*
+// last_decay_day 사용. 이전 버전은 `max(c.last_decay_day)` 였지만, 한 축이 다른 축보다 앞서
+// 있을 때 (예: VERIFICATION 100일치 처리 후 CAPITAL 90일 cap 적용) divergence 발생 →
+// 양 체인 비트 동일성 위반. axis_idx 매개변수로 정정.
 fn process_weeks_with_storage(
     c: &mut Citizen,
     who: &Addr,
     storage: &mut dyn cosmwasm_std::Storage,
+    axis_idx: usize,
 ) -> Result<(), ContractError> {
-    // through_day = max of all 3 axes' last_decay_day
-    let through_day = *c.last_decay_day.iter().max().unwrap();
+    let through_day = c.last_decay_day[axis_idx];
     if through_day < 6 {
         return Ok(());
     }

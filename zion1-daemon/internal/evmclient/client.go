@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
+	"sync"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -75,6 +76,10 @@ const seumABI = `[
 ]`
 
 // Client는 EVM 노드 + SeumStandard 컨트랙트 호출 래퍼.
+//
+// 동시성: sendTx는 sendMu로 직렬화 — pipeline (Zion 이벤트) 와 ragequit watcher 양쪽이
+// 같은 Client를 공유하므로, 병렬 호출 시 동일 PendingNonceAt 값을 얻어 두 번째 tx가
+// "nonce too low" 로 reject되는 race 방지.
 type Client struct {
 	rpc        *ethclient.Client
 	chainID    *big.Int
@@ -84,6 +89,8 @@ type Client struct {
 	senderKey  *ecdsa.PrivateKey
 	senderAddr common.Address
 	parsedABI  abi.ABI
+
+	sendMu sync.Mutex // sendTx 직렬화 (nonce race 방지)
 }
 
 // New는 RPC URL과 송신자 키로 클라이언트 생성.
@@ -172,7 +179,11 @@ func (c *Client) BroadcastAttestDay(ctx context.Context, worker common.Address, 
 }
 
 // sendTx는 ABI 패킹 + nonce 조회 + 서명 + 송출의 공통 흐름.
+// sendMu로 직렬화: 동시 호출 시 PendingNonceAt 값이 갱신될 시간 보장.
 func (c *Client) sendTx(ctx context.Context, method string, args ...interface{}) (*types.Transaction, error) {
+	c.sendMu.Lock()
+	defer c.sendMu.Unlock()
+
 	calldata, err := c.parsedABI.Pack(method, args...)
 	if err != nil {
 		return nil, fmt.Errorf("abi pack %s: %w", method, err)

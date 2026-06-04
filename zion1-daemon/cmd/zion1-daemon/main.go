@@ -167,7 +167,7 @@ func main() {
 		// Phase 1.5: logging-only broadcaster (cosmos-sdk client 통합은 Phase 2).
 		// 명시적 타입으로 "의도적 stub" 임을 표시.
 		zionBroadcaster := handlers.NewLoggingBroadcaster(logger, metricsForHandlers)
-		rqHandler := handlers.NewEVMRagequitHandler(st, zionBroadcaster, metricsForHandlers)
+		rqHandler := handlers.NewEVMRagequitHandler(st, zionBroadcaster, metricsForHandlers, logger)
 		go func() {
 			if err := evm.WatchRagequit(ctx, nil /* fromBlock: head */, ragequitCh); err != nil && err != context.Canceled {
 				logger.Error("ragequit watch error", "error", err.Error())
